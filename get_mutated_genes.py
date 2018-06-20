@@ -21,10 +21,15 @@ def get_rf_pos_list(gene_len):
 wd = '/Users/songweizhi/Desktop/FC'
 combined_ref_gff = 'combined_ref.gff'
 combined_ref_fasta = 'combined_ref.fasta'
+combined_ref_ffn = 'combined_ref.ffn'
+combined_ref_faa = 'combined_ref.faa'
 deepSNV_output = 'deepSNV_output_summary_all_existence_cdc.txt'
 transl_table = 11
-output = 'deepSNV_mutated_gene.txt'
 
+# output files
+output = 'deepSNV_mutated_gene.txt'
+output_seq_nc = 'deepSNV_mutated_gene_nc.fasta'
+output_seq_aa = 'deepSNV_mutated_gene_aa.fasta'
 
 # forward to working directory
 os.chdir(wd)
@@ -43,7 +48,6 @@ for cds in open(combined_ref_gff):
         seq_ID = cds.strip().split('\t')[0]
         if seq_ID not in seq_id_list:
             seq_id_list.append(seq_ID)
-#print(seq_id_list)
 
 
 # get ending positions for all genes
@@ -61,9 +65,6 @@ for cds2 in open(combined_ref_gff):
         ORF_ending_pos_dict[gene_id2] = [start_pos2, end_pos2]
         ORF_seq_id_dict[gene_id2] = seq_id2
         ORF_strand_dict[gene_id2] = strand
-#print(ORF_ending_pos_dict)
-#print(ORF_seq_id_dict)
-#print(ORF_strand_dict)
 
 
 # initialize coding region dict
@@ -195,19 +196,35 @@ for each_snv in open(deepSNV_output):
                                 mutation_type_term = 'Nonsense'
                             else:
                                 mutation_type_term = 'Missense'
-
                             aa_mutation = '%s(%s)->%s(%s)' % (rf_seq_raw, rf_seq_raw_aa, rf_seq_mutated, rf_seq_mutated_aa)
 
                             # print out
                             for_write = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, aa_mutation, mutation_type_term)
                             output_handle.write(for_write)
-
 output_handle.close()
 
 
+# get the list of affected genes
+affected_gene_list_overall = []
+for each_snv2 in open(output):
+    affected_gene = each_snv2.strip().split('\t')[3]
+    if (affected_gene != 'NA') and (affected_gene not in affected_gene_list_overall):
+        affected_gene_list_overall.append(affected_gene)
+print('The total number of affected genes: %s' % len(affected_gene_list_overall))
 
 
+# get the sequence of affected genes
+output_seq_nc_handle = open(output_seq_nc, 'w')
+for each_gene_nc in SeqIO.parse(combined_ref_ffn, 'fasta'):
+    if each_gene_nc.id in affected_gene_list_overall:
+        SeqIO.write(each_gene_nc, output_seq_nc_handle, 'fasta')
+output_seq_nc_handle.close()
 
+output_seq_aa_handle = open(output_seq_aa, 'w')
+for each_gene_aa in SeqIO.parse(combined_ref_faa, 'fasta'):
+    if each_gene_aa.id in affected_gene_list_overall:
+        SeqIO.write(each_gene_aa, output_seq_aa_handle, 'fasta')
+output_seq_aa_handle.close()
 
 
 
