@@ -3,7 +3,11 @@ import os
 
 wd = '/Users/songweizhi/Desktop/FC'
 deepSNV_output = 'deepSNV_output_summary_all_existence.txt'
+
+
 deepSNV_output_cdc = 'deepSNV_output_summary_all_existence_cdc.txt'
+
+
 
 os.chdir(wd)
 

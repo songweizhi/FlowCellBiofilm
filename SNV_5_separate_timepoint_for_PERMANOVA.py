@@ -1,14 +1,20 @@
 import os
 
 
-os.chdir('/Users/songweizhi/Dropbox/Research/Flow_cell/deepSNV_output_summary')
+#wd = '/Users/songweizhi/Dropbox/Research/Flow_cell/deepSNV_output_summary'
+wd = '/Users/songweizhi/Desktop/aaa'
 
 timepoint_list = ['D9', 'D18', 'D27', 'D42']
-infile = 'deepSNV_output_summary_210_existence.txt'
+
+#infile = 'deepSNV_output_summary_210_existence.txt'
 #infile = 'deepSNV_output_summary_210_frequency.txt'
 #infile = 'deepSNV_output_summary_D2_existence.txt'
 #infile = 'deepSNV_output_summary_D2_frequency.txt'
 
+infile = 'deepSNV_output_summary_210_existence.txt'
+
+
+os.chdir(wd)
 
 infile_basename, ext = os.path.splitext(infile)
 
@@ -52,4 +58,8 @@ for timepoint in timepoint_list:
             out_file_handle.write('%s\n' % needed)
 
     out_file_handle.close()
+
+
+
+
 

@@ -21,10 +21,15 @@ def get_rf_pos_list(gene_len):
 wd = '/Users/songweizhi/Desktop/FC'
 combined_ref_gff = 'combined_ref.gff'
 combined_ref_fasta = 'combined_ref.fasta'
+combined_ref_ffn = 'combined_ref.ffn'
+combined_ref_faa = 'combined_ref.faa'
 deepSNV_output = 'deepSNV_output_summary_all_existence_cdc.txt'
 transl_table = 11
-output = 'deepSNV_mutated_gene.txt'
 
+# output files
+output = 'deepSNV_mutated_gene.txt'
+output_seq_nc = 'deepSNV_mutated_gene_nc.fasta'
+output_seq_aa = 'deepSNV_mutated_gene_aa.fasta'
 
 # forward to working directory
 os.chdir(wd)
@@ -43,7 +48,6 @@ for cds in open(combined_ref_gff):
         seq_ID = cds.strip().split('\t')[0]
         if seq_ID not in seq_id_list:
             seq_id_list.append(seq_ID)
-#print(seq_id_list)
 
 
 # get ending positions for all genes
@@ -61,9 +65,6 @@ for cds2 in open(combined_ref_gff):
         ORF_ending_pos_dict[gene_id2] = [start_pos2, end_pos2]
         ORF_seq_id_dict[gene_id2] = seq_id2
         ORF_strand_dict[gene_id2] = strand
-#print(ORF_ending_pos_dict)
-#print(ORF_seq_id_dict)
-#print(ORF_strand_dict)
 
 
 # initialize coding region dict
@@ -91,8 +92,38 @@ for each_snv in open(deepSNV_output):
         each_snv_pos_wt = each_snv.strip().split('\t')[0].split('|')[2]
         each_snv_pos_v = each_snv.strip().split('\t')[0].split('|')[3]
 
+        # get all affected genes for
         if ('-' in each_snv_pos) and (len(each_snv_pos_wt) > 1):
-            print(each_snv.strip())
+            #print(each_snv.strip())
+            each_snv_pos_start = int(each_snv_pos.split('-')[0])
+            each_snv_pos_end = int(each_snv_pos.split('-')[1])
+            deleted_ncs = list(range(each_snv_pos_start, each_snv_pos_end + 1))
+
+            # get the list of affected genes
+            affected_gene_list = []
+            location_fragement_deletion = ''
+            for dnc in deleted_ncs:
+                for each_gene in ORF_ending_pos_dict:
+                    if (each_snv_seq == ORF_seq_id_dict[each_gene]) and (ORF_ending_pos_dict[each_gene][0] <= dnc <= ORF_ending_pos_dict[each_gene][1]):
+                        affected_gene_list.append(each_gene)
+
+            # uniq the list of affected genes
+            affected_gene_list_uniq = []
+            for each_affected_gene in affected_gene_list:
+                if each_affected_gene not in affected_gene_list_uniq:
+                    affected_gene_list_uniq.append(each_affected_gene)
+
+            # get the location of deleted fragement, Intergenic or Coding
+            if len(affected_gene_list_uniq) == 0:
+                location_fragement_deletion = 'Intergenic'
+            else:
+                location_fragement_deletion = 'Coding'
+
+            if location_fragement_deletion == 'Intergenic':
+                output_handle.write('%s\t%s\tNA\tNA\tNA\tNA\n' % (each_snv.strip().split('\t')[0], location_fragement_deletion))
+            elif location_fragement_deletion == 'Coding':
+                for each_affected_gene2 in affected_gene_list_uniq:
+                    output_handle.write('%s\t%s\t%s\t%s\tNA\tFagement_deletion\n' % (each_snv.strip().split('\t')[0], location_fragement_deletion, ORF_strand_dict[each_affected_gene2], each_affected_gene2))
 
         else:
             each_snv_pos = int(each_snv_pos)
@@ -100,29 +131,30 @@ for each_snv in open(deepSNV_output):
             # get SNV location
             location = ''
             if each_snv_pos in coding_region_dict[each_snv_seq]:
-                location = 'coding'
+                location = 'Coding'
             else:
-                location = 'intergenic'
+                location = 'Intergenic'
                 #print('%s\t%s' % (each_snv.strip().split('\t')[0], location))
+                output_handle.write('%s\t%s\tNA\tNA\tNA\tNA\n' % (each_snv.strip().split('\t')[0], location))
 
             # get mutation type
-            if location == 'coding':
-                mutation_type = ''
-                if each_snv_pos_v == '-':
-                    mutation_type = 'frameshift'
-                    output_handle.write('%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0], location, 'NA', mutation_type))
+            if location == 'Coding':
+                for each_gene in ORF_ending_pos_dict:
+                    if (each_snv_seq == ORF_seq_id_dict[each_gene]) and (ORF_ending_pos_dict[each_gene][0] <= each_snv_pos <= ORF_ending_pos_dict[each_gene][1]):
 
-                elif each_snv_pos_v in ['A', 'T', 'C', 'G']:
-                    for each_gene in ORF_ending_pos_dict:
-                        if (each_snv_seq == ORF_seq_id_dict[each_gene]) and (ORF_ending_pos_dict[each_gene][0] <= each_snv_pos <= ORF_ending_pos_dict[each_gene][1]):
-                            start_pos_raw = ORF_ending_pos_dict[each_gene][0]
-                            end_pos_raw = ORF_ending_pos_dict[each_gene][1]
-                            snv_pos_raw = each_snv_pos
-                            start_pos_rescaled = ORF_ending_pos_dict[each_gene][0] - (ORF_ending_pos_dict[each_gene][0] - 1)
-                            end_pos_rescaled = ORF_ending_pos_dict[each_gene][1] - (ORF_ending_pos_dict[each_gene][0] - 1)
-                            snv_pos_rescaled = each_snv_pos - (ORF_ending_pos_dict[each_gene][0] - 1)
-                            #print('%s\t%s\t%s' % (start_pos_raw, each_snv_pos, end_pos_raw))
-                            #print('%s\t%s\t%s' % (start_pos_rescaled, snv_pos_rescaled, end_pos_rescaled))
+                        start_pos_raw = ORF_ending_pos_dict[each_gene][0]
+                        end_pos_raw = ORF_ending_pos_dict[each_gene][1]
+                        snv_pos_raw = each_snv_pos
+                        start_pos_rescaled = ORF_ending_pos_dict[each_gene][0] - (ORF_ending_pos_dict[each_gene][0] - 1)
+                        end_pos_rescaled = ORF_ending_pos_dict[each_gene][1] - (ORF_ending_pos_dict[each_gene][0] - 1)
+                        snv_pos_rescaled = each_snv_pos - (ORF_ending_pos_dict[each_gene][0] - 1)
+                        mutation_type = ''
+
+                        if each_snv_pos_v == '-':
+                            mutation_type = 'Frameshift'
+                            output_handle.write('%s\t%s\t%s\t%s\tNA\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, mutation_type))
+
+                        elif each_snv_pos_v in ['A', 'T', 'C', 'G']:
 
                             # get all reading frame
                             rf_pos_list = get_rf_pos_list(snv_pos_rescaled)
@@ -164,21 +196,40 @@ for each_snv in open(deepSNV_output):
                                 mutation_type_term = 'Nonsense'
                             else:
                                 mutation_type_term = 'Missense'
-
-                            mutation_type = '%s->%s(%s)' % (rf_seq_raw_aa, rf_seq_mutated_aa, mutation_type_term)
+                            aa_mutation = '%s(%s)->%s(%s)' % (rf_seq_raw, rf_seq_raw_aa, rf_seq_mutated, rf_seq_mutated_aa)
 
                             # print out
-                            for_write = '%s\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, mutation_type)
+                            for_write = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, aa_mutation, mutation_type_term)
                             output_handle.write(for_write)
-
 output_handle.close()
 
 
+# get the list of affected genes
+affected_gene_list_overall = []
+for each_snv2 in open(output):
+    affected_gene = each_snv2.strip().split('\t')[3]
+    if (affected_gene != 'NA') and (affected_gene not in affected_gene_list_overall):
+        affected_gene_list_overall.append(affected_gene)
+print('The total number of affected genes: %s' % len(affected_gene_list_overall))
+
+
+# get the sequence of affected genes
+output_seq_nc_handle = open(output_seq_nc, 'w')
+for each_gene_nc in SeqIO.parse(combined_ref_ffn, 'fasta'):
+    if each_gene_nc.id in affected_gene_list_overall:
+        SeqIO.write(each_gene_nc, output_seq_nc_handle, 'fasta')
+output_seq_nc_handle.close()
+
+output_seq_aa_handle = open(output_seq_aa, 'w')
+for each_gene_aa in SeqIO.parse(combined_ref_faa, 'fasta'):
+    if each_gene_aa.id in affected_gene_list_overall:
+        SeqIO.write(each_gene_aa, output_seq_aa_handle, 'fasta')
+output_seq_aa_handle.close()
 
 
 
-
-
+# to do
+# which mutation has positive effect?
 
 
 
