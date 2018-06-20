@@ -46,7 +46,6 @@ for timepoint in timepoint_list:
         if timepoint == 'D42':
             print(each_split)
             if each.startswith('	'):
-
                 needed = '%s\t%s\t%s\t%s\t%s\t%s' % (each_split[3], each_split[7], each_split[11], each_split[15], each_split[19], each_split[23])
             else:
                 needed = '%s\t%s\t%s\t%s\t%s\t%s\t%s' % (each_split[0], each_split[4], each_split[8], each_split[12], each_split[16], each_split[20], each_split[24])
@@ -56,8 +55,5 @@ for timepoint in timepoint_list:
             out_file_handle.write('%s\n' % needed)
 
     out_file_handle.close()
-
-
-
 
 

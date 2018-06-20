@@ -2,10 +2,10 @@ import os
 
 
 wd = '/Users/songweizhi/Desktop/aaa'
-#deepSNV_output = 'deepSNV_output_summary_210_existence.txt'
+deepSNV_output = 'deepSNV_output_summary_210_existence.txt'
 #deepSNV_output = 'deepSNV_output_summary_210_frequency.txt'
 #deepSNV_output = 'deepSNV_output_summary_D2_existence.txt'
-deepSNV_output = 'deepSNV_output_summary_D2_frequency.txt'
+#deepSNV_output = 'deepSNV_output_summary_D2_frequency.txt'
 
 
 # prepare output file name
@@ -21,6 +21,9 @@ current_profile_start = ''
 current_pos = 0
 deleted_ncs = ''
 for each_snv in open(deepSNV_output):
+    if each_snv.startswith('\t'):
+        deepSNV_output_cdc_handle.write(each_snv)
+
     if not each_snv.startswith('\t'):
         each_snv_seq = each_snv.strip().split('\t')[0].split('|')[0]
         each_snv_pos = int(each_snv.strip().split('\t')[0].split('|')[1])
