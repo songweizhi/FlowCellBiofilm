@@ -1,16 +1,18 @@
 import os
 
 
-wd = '/Users/songweizhi/Desktop/FC'
-deepSNV_output = 'deepSNV_output_summary_all_existence.txt'
+wd = '/Users/songweizhi/Desktop/aaa'
+#deepSNV_output = 'deepSNV_output_summary_210_existence.txt'
+#deepSNV_output = 'deepSNV_output_summary_210_frequency.txt'
+#deepSNV_output = 'deepSNV_output_summary_D2_existence.txt'
+deepSNV_output = 'deepSNV_output_summary_D2_frequency.txt'
 
 
-deepSNV_output_cdc = 'deepSNV_output_summary_all_existence_cdc.txt'
-
-
+# prepare output file name
+deepSNV_output_basename, ext = os.path.splitext(deepSNV_output)
+deepSNV_output_cdc = '%s_cdc.txt' % deepSNV_output_basename
 
 os.chdir(wd)
-
 
 deepSNV_output_cdc_handle = open(deepSNV_output_cdc, 'w')
 current_seq = ''
@@ -46,6 +48,7 @@ for each_snv in open(deepSNV_output):
             deleted_ncs += each_snv_pos_wt
         elif each_snv_pos != (current_pos + 1):
             if (current_seq != '') and (current_pos != 0) and (deleted_ncs != ''):
+                for_out = ''
                 if len(deleted_ncs) == 1:
                     for_out = '%s|%s|%s|-\t%s\n' % (current_seq, current_pos, deleted_ncs, current_profile_start)
                 elif len(deleted_ncs) > 1:

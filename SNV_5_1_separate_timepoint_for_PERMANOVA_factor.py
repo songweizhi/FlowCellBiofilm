@@ -22,3 +22,8 @@ for timepoint in timepoint_list:
             out_file_handle.write(each)
 
     out_file_handle.close()
+
+
+
+
+

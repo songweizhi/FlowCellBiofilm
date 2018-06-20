@@ -6,12 +6,10 @@ wd = '/Users/songweizhi/Desktop/aaa'
 
 timepoint_list = ['D9', 'D18', 'D27', 'D42']
 
-#infile = 'deepSNV_output_summary_210_existence.txt'
-#infile = 'deepSNV_output_summary_210_frequency.txt'
-#infile = 'deepSNV_output_summary_D2_existence.txt'
-#infile = 'deepSNV_output_summary_D2_frequency.txt'
-
-infile = 'deepSNV_output_summary_210_existence.txt'
+infile = 'deepSNV_output_summary_210_existence_cdc.txt'
+#infile = 'deepSNV_output_summary_210_frequency_cdc.txt'
+#infile = 'deepSNV_output_summary_D2_existence_cdc.txt'
+#infile = 'deepSNV_output_summary_D2_frequency_cdc.txt'
 
 
 os.chdir(wd)
