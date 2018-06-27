@@ -5,7 +5,8 @@ library(ecodist) # for nmds,  https://www.rdocumentation.org/packages/ecodist/ve
 setwd("/Users/songweizhi/Dropbox/Research/Flow_cell/deepSNV_output_summary")
 strain = 'D2' # 210 or D2
 data_type = 'existence' # frequency or existence
-vegdist_method = 'euclidean' # euclidean or jaccard or bray
+vegdist_method = 'euclidean' # euclidean or jaccard or bray, manhattan
+# Dissimilarity index, partial match to "manhattan", "euclidean", "canberra", "clark", "bray", "kulczynski", "jaccard", "gower", "altGower", "morisita", "horn", "mountford", "raup", "binomial", "chao", "cao" or "mahalanobis".
 
 # get input file name
 snv_summary_file = paste('deepSNV_output_summary_', strain, '_', data_type, '_cdc.txt', sep = '')
@@ -25,11 +26,11 @@ snv_factor
 snv_summary_t = t(snv_summary)
 
 # calculate relative abundance
-# snv_summary_t_norm = snv_summary_t / rowSums(snv_summary_t) * 100
+#snv_summary_t_norm = snv_summary_t / rowSums(snv_summary_t) * 100
 
 ## Calculate dissimilarity matrix, type ?vegdist for other options (e.g. Jaccard is useful for presence/absence analyses (composition only)).
 snv_summary_t_ja = vegdist(snv_summary_t, method = vegdist_method)
-
+?vegdist
 # plot hclust
 # snv_summary_t_ja_hclus = hclust(snv_summary_t_ja, method = "average") # Cluster the distances
 # par(pty = 's') # square plot

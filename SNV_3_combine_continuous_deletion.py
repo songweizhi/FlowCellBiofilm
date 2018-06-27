@@ -1,8 +1,10 @@
 import os
 
 
-wd = '/Users/songweizhi/Desktop/aaa'
-deepSNV_output = 'deepSNV_output_summary_210_existence.txt'
+wd = '/Users/songweizhi/Desktop/FC'
+
+deepSNV_output = 'deepSNV_output_summary_all_frequency.txt'
+#deepSNV_output = 'deepSNV_output_summary_210_existence.txt'
 #deepSNV_output = 'deepSNV_output_summary_210_frequency.txt'
 #deepSNV_output = 'deepSNV_output_summary_D2_existence.txt'
 #deepSNV_output = 'deepSNV_output_summary_D2_frequency.txt'
