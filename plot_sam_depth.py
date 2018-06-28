@@ -6,19 +6,6 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-usage = '''
-
-# plot depth for a specified region of a contig
-$ python ~/PycharmProjects/FlowCellBiofilm/plot_sam_depth.py -r 2.10wt_illumina.fasta -d 9D27.depth -i 2.10_plasmid1 -s 2000 -e 10000 -k 100
-
-# plot depth for the full length of one specified contig in the reference file 
-$ python ~/PycharmProjects/FlowCellBiofilm/plot_sam_depth.py -r 2.10wt_illumina.fasta -d 9D27.depth -i plasmid1 -k 1000
-
-# plot depth for the full length of all contigs in the reference file 
-$ python ~/PycharmProjects/FlowCellBiofilm/plot_sam_depth.py -r 2.10wt_illumina.fasta -d 9D27.depth -k 1000
-
-'''
-
 
 def take_kmer_mean(num_list, k_mer):
 
@@ -128,36 +115,12 @@ def main(depth_file, seq_to_plot, start_pos, end_pos, plot_filename):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-r',
-                    required=True,
-                    help='reference sequence file')
-
-parser.add_argument('-d',
-                    required=True,
-                    help='depth file')
-
-parser.add_argument('-i',
-                    required=False,
-                    default=None,
-                    help='id of sequence to plot')
-
-parser.add_argument('-s',
-                    required=False,
-                    type=int,
-                    default=None,
-                    help='start position to plot')
-
-parser.add_argument('-e',
-                    required=False,
-                    type=int,
-                    default=None,
-                    help='end position to plot')
-
-parser.add_argument('-k',
-                    required=False,
-                    type=int,
-                    default=100,
-                    help='k-mer mean depth')
+parser.add_argument('-r', required=True, help='reference sequence file')
+parser.add_argument('-d', required=True, help='depth file')
+parser.add_argument('-i', required=False, default=None, help='id of sequence to plot')
+parser.add_argument('-s', required=False, type=int, default=None, help='start position to plot')
+parser.add_argument('-e', required=False, type=int, default=None, help='end position to plot')
+parser.add_argument('-k', required=False, type=int, default=100, help='k-mer mean depth')
 
 args = vars(parser.parse_args())
 sequence_file = args['r']
@@ -174,6 +137,11 @@ k_mer = args['k']
 seq_id_length_dict = {}
 for each_seq in SeqIO.parse(sequence_file, 'fasta'):
     seq_id_length_dict[each_seq.id] = len(each_seq.seq)
+
+
+if seq_to_plot not in seq_id_length_dict:
+    print('Reference sequence %s not found in bam file, program exited!' % seq_to_plot)
+    exit()
 
 
 # get depth_file base name
