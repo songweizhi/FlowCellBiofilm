@@ -8,11 +8,14 @@ import matplotlib.pyplot as plt
 
 usage = '''
 
+# plot depth for a specified region of a contig
+$ python ~/PycharmProjects/FlowCellBiofilm/plot_sam_depth.py -r 2.10wt_illumina.fasta -d 9D27.depth -i 2.10_plasmid1 -s 2000 -e 10000 -k 100
+
 # plot depth for the full length of one specified contig in the reference file 
-$ python ~/PycharmProjects/FlowCellBiofilm/area_lot.py -r 2.10wt_illumina.fasta -d 9D27.depth -k 1000
+$ python ~/PycharmProjects/FlowCellBiofilm/plot_sam_depth.py -r 2.10wt_illumina.fasta -d 9D27.depth -i plasmid1 -k 1000
 
 # plot depth for the full length of all contigs in the reference file 
-$ python ~/PycharmProjects/FlowCellBiofilm/area_lot.py -r 2.10wt_illumina.fasta -d 9D27.depth -k 1000
+$ python ~/PycharmProjects/FlowCellBiofilm/plot_sam_depth.py -r 2.10wt_illumina.fasta -d 9D27.depth -k 1000
 
 '''
 
@@ -111,8 +114,13 @@ def main(depth_file, seq_to_plot, start_pos, end_pos, plot_filename):
     # Change the color and its transparency
     plt.plot(x, y, color="skyblue", alpha=0.7, linewidth=0.7)
 
+    # titles
+    plt.title(plot_filename)
+    plt.xlabel('Position (bp)', fontsize=10)
+    plt.ylabel('Depth (X)', fontsize=10)
+
     # Get plot
-    plt.savefig(plot_filename, dpi=300)
+    plt.savefig('%s.png' % plot_filename, dpi=300)
     plt.close()
 
 
@@ -179,11 +187,14 @@ if seq_to_plot != None:
         start_pos = 1
     if end_pos == None:
         end_pos = seq_id_length_dict[seq_to_plot]
-    plot_filename = '%s_%s_%sbp-%sbp_%smer.png' % (depth_file_basename, seq_to_plot, start_pos, end_pos, k_mer)
+
+    print('Processing %s' % seq_to_plot)
+    plot_filename = '%s_%s_%s-%sbp_%smer' % (depth_file_basename, seq_to_plot, start_pos, end_pos, k_mer)
     main(depth_file, seq_to_plot, start_pos, end_pos, plot_filename)
 
 if seq_to_plot == None:
+
     for each_ctg in SeqIO.parse(sequence_file, 'fasta'):
         print('Processing %s' % each_ctg.id)
-        plot_filename = '%s_%s_%sbp-%sbp_%smer.png' % (depth_file_basename, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], k_mer)
+        plot_filename = '%s_%s_%s-%sbp_%smer' % (depth_file_basename, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], k_mer)
         main(depth_file, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], plot_filename)
