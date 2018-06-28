@@ -5,6 +5,7 @@
 
 1. plot_sam_depth.py
 ---
+
 Format of image title: (bam file)\__(contig id)\__(starting bp to plot)-(ending bp to plot)\__(average depth of k-mer)
 
 
