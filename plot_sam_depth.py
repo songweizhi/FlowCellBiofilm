@@ -113,22 +113,25 @@ def main(depth_file, seq_to_plot, start_pos, end_pos, plot_filename):
 
 ################################################# input #################################################
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='', add_help=False)
+required = parser.add_argument_group('required arguments')
+optional = parser.add_argument_group('optional arguments')
 
-parser.add_argument('-r', required=True, help='reference sequence file')
-parser.add_argument('-d', required=True, help='depth file')
-parser.add_argument('-i', required=False, default=None, help='id of sequence to plot')
-parser.add_argument('-s', required=False, type=int, default=None, help='start position to plot')
-parser.add_argument('-e', required=False, type=int, default=None, help='end position to plot')
-parser.add_argument('-k', required=False, type=int, default=100, help='k-mer mean depth')
+optional.add_argument('-h', action='help', help='Show this help message and exit')
+required.add_argument('-r', dest='REF', nargs='?', required=True,  type=str, help='reference sequence file')
+required.add_argument('-d', dest='DEPTH', nargs='?', required=True,  type=str, help='depth file')
+optional.add_argument('-i', dest='SeqID', nargs='?', required=False, type=str, default=None, help='id of sequence to plot')
+optional.add_argument('-s', dest='START', nargs='?', required=False, type=int, default=None, help='start position to plot')
+optional.add_argument('-e', dest='END', nargs='?', required=False, type=int, default=None, help='end position to plot')
+optional.add_argument('-k', dest='Kmer', nargs='?', required=False, type=int, default=100, help='k-mer mean depth')
 
 args = vars(parser.parse_args())
-sequence_file = args['r']
-depth_file = args['d']
-seq_to_plot = args['i']
-start_pos = args['s']
-end_pos = args['e']
-k_mer = args['k']
+sequence_file = args['REF']
+depth_file = args['DEPTH']
+seq_to_plot = args['SeqID']
+start_pos = args['START']
+end_pos = args['END']
+k_mer = args['Kmer']
 
 
 #########################################################################################################
