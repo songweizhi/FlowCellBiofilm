@@ -4,9 +4,6 @@ import pysam
 import argparse
 
 
-# python3 ~/PycharmProjects/FlowCellBiofilm/SNV_2_1_deepSNV_remove_false_positive.py -bf /Users/songweizhi/Desktop/pysam_wd -df /Users/songweizhi/Dropbox/Research/Flow_cell/deepSNV_output_summary/4_deepSNV_output -i 8D27
-
-
 def get_depth_and_snv_reads_num(input_bam_file, detected_snv):
 
     detected_snv_split = detected_snv.split('|')
