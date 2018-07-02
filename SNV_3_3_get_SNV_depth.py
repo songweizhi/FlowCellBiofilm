@@ -2,80 +2,57 @@ import os
 
 
 wd = '/Users/songweizhi/Desktop/FC'
-
-deepSNV_output = 'deepSNV_output_summary_all_frequency.txt'
-#deepSNV_output = 'deepSNV_output_summary_210_existence.txt'
-#deepSNV_output = 'deepSNV_output_summary_210_frequency.txt'
-#deepSNV_output = 'deepSNV_output_summary_D2_existence.txt'
-#deepSNV_output = 'deepSNV_output_summary_D2_frequency.txt'
-
-
-# prepare output file name
-deepSNV_output_basename, ext = os.path.splitext(deepSNV_output)
-deepSNV_output_cdc = '%s_cdc.txt' % deepSNV_output_basename
-
 os.chdir(wd)
 
-deepSNV_output_cdc_handle = open(deepSNV_output_cdc, 'w')
-current_seq = ''
-current_pos_start = 0
-current_profile_start = ''
-current_pos = 0
-deleted_ncs = ''
-for each_snv in open(deepSNV_output):
-    if each_snv.startswith('\t'):
-        deepSNV_output_cdc_handle.write(each_snv)
+plot_sam_depth_script = '~/PycharmProjects/FlowCellBiofilm/plot_sam_depth.py'
+snv_cdc_file = 'deepSNV_output_summary_all_frequency_cdc.txt'
+flanking_length = 10000
+kmer = 1000
 
-    if not each_snv.startswith('\t'):
-        each_snv_seq = each_snv.strip().split('\t')[0].split('|')[0]
-        each_snv_pos = int(each_snv.strip().split('\t')[0].split('|')[1])
-        each_snv_pos_wt = each_snv.strip().split('\t')[0].split('|')[2]
-        each_snv_pos_v = each_snv.strip().split('\t')[0].split('|')[3]
 
-        if (each_snv_pos_v == '-') and (current_seq == '') and (current_pos == 0) and (deleted_ncs == ''):
-            current_seq = each_snv_seq
-            current_pos_start = each_snv_pos
-            current_profile_start = '\t'.join(each_snv.strip().split('\t')[1:])
-            current_pos = each_snv_pos
-            deleted_ncs = each_snv_pos_wt
-        elif (each_snv_seq == current_seq) and (each_snv_pos == (current_pos + 1)) and (each_snv_pos_v != '-'):
-            for_out = '%s|%s-%s|%s|-\t%s\n' % (current_seq, current_pos_start, current_pos, deleted_ncs, current_profile_start)
-            deepSNV_output_cdc_handle.write(for_out)
-            deepSNV_output_cdc_handle.write(each_snv)
-            current_seq = ''
-            current_pos_start = 0
-            current_profile_start = ''
-            current_pos = 0
-            deleted_ncs = ''
+summary_file_header_all = ['1D9', '1D18', '1D27', '1D42', '5D9', '5D18', '5D27', '5D42', '9D9', '9D18', '9D27', '9D42', '2D9', '2D18', '2D27', '2D42', '6D9', '6D18', '6D27', '6D42', '10D9', '10D18', '10D27', '10D42', '4D9', '4D18', '4D27', '4D42', '8D9', '8D18', '8D27', '8D42', '12D9', '12D18', '12D27', '12D42']
+reference_dict = {'1': '2.10wt_illumina.fasta',
+                  '5': '2.10wt_illumina.fasta',
+                  '9': '2.10wt_illumina.fasta',
+                  '2': 'D2_pacbio.fasta',
+                  '6': 'D2_pacbio.fasta',
+                  '10': 'D2_pacbio.fasta',
+                  '4': 'combined_ref.fasta',
+                  '8': 'combined_ref.fasta',
+                  '12': 'combined_ref.fasta'}
 
-        elif (each_snv_seq == current_seq) and (each_snv_pos == (current_pos + 1)) and (each_snv_pos_v == '-'):
-            current_pos = each_snv_pos
-            deleted_ncs += each_snv_pos_wt
-        elif each_snv_pos != (current_pos + 1):
-            if (current_seq != '') and (current_pos != 0) and (deleted_ncs != ''):
-                for_out = ''
-                if len(deleted_ncs) == 1:
-                    for_out = '%s|%s|%s|-\t%s\n' % (current_seq, current_pos, deleted_ncs, current_profile_start)
-                elif len(deleted_ncs) > 1:
-                    for_out = '%s|%s-%s|%s|-\t%s\n' % (current_seq, current_pos_start, current_pos, deleted_ncs, current_profile_start)
-                deepSNV_output_cdc_handle.write(for_out)
 
-                if each_snv_pos_v == '-':
-                    current_seq = each_snv_seq
-                    current_pos_start = each_snv_pos
-                    current_profile_start = '\t'.join(each_snv.strip().split('\t')[1:])
-                    current_pos = each_snv_pos
-                    deleted_ncs = each_snv_pos_wt
+for each_snv in open(snv_cdc_file):
+    if not each_snv.startswith('	'):
+        each_snv_id = each_snv.strip().split('\t')[0]
+        each_snv_id_split = each_snv_id.split('|')
+        each_snv_pos = each_snv_id_split[1]
+        ref_seq_id = each_snv_id_split[0]
+        time_points = each_snv.strip().split('\t')[1:]
+
+        n = 0
+        for each_time_point in time_points:
+
+            if each_time_point != '0':
+                current_time_point = summary_file_header_all[n]
+                depth_file = '%s.depth' % current_time_point
+                reference_file = reference_dict[current_time_point.split('D')[0]]
+                reference_seq = ref_seq_id
+                plot_name = '%s_%s_f%sbp_%smer' % (each_snv_id, current_time_point, flanking_length, kmer)
+                cmd = ''
+
+                if '-' in each_snv_pos:
+                    each_snv_pos_start = int(each_snv_pos.split('-')[0])
+                    each_snv_pos_end = int(each_snv_pos.split('-')[1])
+                    plot_start = each_snv_pos_start - flanking_length
+                    plot_end = each_snv_pos_end + flanking_length
+                    cmd = 'python3 %s -r %s -d %s -i %s -s %s -e %s -k %s -o %s' % (plot_sam_depth_script, reference_file, depth_file, reference_seq, plot_start, plot_end, kmer, plot_name)
                 else:
-                    deepSNV_output_cdc_handle.write(each_snv)
-                    current_seq = ''
-                    current_pos_start = 0
-                    current_profile_start = ''
-                    current_pos = 0
-                    deleted_ncs = ''
+                    plot_start = int(each_snv_pos) - flanking_length
+                    plot_end = int(each_snv_pos) + flanking_length
+                    cmd = 'python3 %s -r %s -d %s -i %s -s %s -e %s -k %s -o %s' % (plot_sam_depth_script, reference_file, depth_file, reference_seq, plot_start, plot_end, kmer, plot_name)
 
-            elif (current_seq == '') and (current_pos == 0) and (deleted_ncs == '') and (each_snv_pos_v != '-'):
-                deepSNV_output_cdc_handle.write(each_snv)
+                print(cmd)
 
-deepSNV_output_cdc_handle.close()
+            n += 1
 

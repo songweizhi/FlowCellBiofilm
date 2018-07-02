@@ -36,7 +36,7 @@ def take_kmer_mean(num_list, k_mer):
     return k_mer_average_list
 
 
-def main(depth_file, seq_to_plot, start_pos, end_pos, plot_filename):
+def main(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, plot_filename):
     #print('Extracting absolute depth from input file')
     x = []
     y = []
@@ -97,14 +97,24 @@ def main(depth_file, seq_to_plot, start_pos, end_pos, plot_filename):
     #print('Calculating k-mer means')
     y = take_kmer_mean(y, k_mer)
 
-    #print('Plotting')
     # Change the color and its transparency
     plt.plot(x, y, color="skyblue", alpha=0.7, linewidth=0.7)
 
     # titles
-    plt.title(plot_filename)
+    plt.title(plot_filename,fontsize=7)
     plt.xlabel('Position (bp)', fontsize=10)
     plt.ylabel('Depth (X)', fontsize=10)
+
+    plt.xticks(fontsize=7)
+    plt.yticks(fontsize=7)
+
+    plt.ylim(ymin=0)
+
+    # add lines to specified positions
+    if bps_to_marker != None:
+        bps_to_marker_list = bps_to_marker.strip().split(',')
+        for each_line in bps_to_marker_list:
+            plt.axvline(x=int(each_line), c='red', linewidth=0.3)
 
     # Get plot
     plt.savefig('%s.png' % plot_filename, dpi=300)
@@ -124,6 +134,9 @@ optional.add_argument('-i', dest='SeqID', nargs='?', required=False, type=str, d
 optional.add_argument('-s', dest='START', nargs='?', required=False, type=int, default=None, help='start position to plot')
 optional.add_argument('-e', dest='END', nargs='?', required=False, type=int, default=None, help='end position to plot')
 optional.add_argument('-k', dest='Kmer', nargs='?', required=False, type=int, default=100, help='k-mer mean depth')
+optional.add_argument('-o', dest='Out', nargs='?', required=False, type=str, default=None, help='output plot name')
+optional.add_argument('-l', dest='Lines', nargs='?', required=False, type=str, default=None, help='output plot name')
+
 
 args = vars(parser.parse_args())
 sequence_file = args['REF']
@@ -132,7 +145,8 @@ seq_to_plot = args['SeqID']
 start_pos = args['START']
 end_pos = args['END']
 k_mer = args['Kmer']
-
+plot_filename = args['Out']
+bps_to_marker = args['Lines']
 
 #########################################################################################################
 
@@ -160,12 +174,14 @@ if seq_to_plot != None:
         end_pos = seq_id_length_dict[seq_to_plot]
 
     print('Processing %s' % seq_to_plot)
-    plot_filename = '%s__%s__%s-%sbp__%smer' % (depth_file_basename, seq_to_plot, start_pos, end_pos, k_mer)
-    main(depth_file, seq_to_plot, start_pos, end_pos, plot_filename)
+    if plot_filename == None:
+        plot_filename = '%s__%s__%s-%sbp__%smer' % (depth_file_basename, seq_to_plot, start_pos, end_pos, k_mer)
+    main(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, plot_filename)
 
 if seq_to_plot == None:
 
     for each_ctg in SeqIO.parse(sequence_file, 'fasta'):
         print('Processing %s' % each_ctg.id)
-        plot_filename = '%s__%s__%s-%sbp__%smer' % (depth_file_basename, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], k_mer)
-        main(depth_file, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], plot_filename)
+        if plot_filename == None:
+            plot_filename = '%s__%s__%s-%sbp__%smer' % (depth_file_basename, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], k_mer)
+        main(depth_file, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], bps_to_marker, plot_filename)
