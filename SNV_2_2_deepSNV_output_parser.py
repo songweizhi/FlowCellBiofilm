@@ -1,10 +1,19 @@
 import os
 import glob
+import argparse
 
 
-os.chdir('/Users/songweizhi/Dropbox/Research/Flow_cell/deepSNV_output_summary')
-deepSNV_output_folder = '/Users/songweizhi/Dropbox/Research/Flow_cell/deepSNV_output_summary/4_deepSNV'
+############################## specify input files ##############################
 
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-in', required=True, help='deepSNV output folder')
+args = vars(parser.parse_args())
+
+deepSNV_output_folder = args['in']
+
+
+#################################################################################
 
 sample_dict = {'1': 'Mono210_A', '5': 'Mono210_B', '9': 'Mono210_C', '2': 'MonoD2_A', '6': 'MonoD2_B', '10': 'MonoD2_C', '4': 'Coculture_A', '8': 'Coculture_B', '12': 'Coculture_C'}
 replicate_dict = {'1': 'A', '5': 'B', '9': 'C', '2': 'A', '6': 'B', '10': 'C', '4': 'A', '8': 'B', '12': 'C'}

@@ -31,7 +31,7 @@ depth_file_list = [os.path.basename(file_name) for file_name in glob.glob(depth_
 
 ############################################### get subsample percentage ###############################################
 
-depth_summary_file = '/Users/songweizhi/Desktop/bam_depth.txt'
+depth_summary_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/subsample_wd/bam_depth.txt'
 
 depth_list = []
 depth_dict = {}
@@ -42,7 +42,7 @@ for each_depth in open(depth_summary_file):
 
 min_depth = min(depth_list)
 
-subsample_percent_file = '/Users/songweizhi/Desktop/bam_depth_subsample_percent.txt'
+subsample_percent_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/subsample_wd/bam_depth_subsample_percent.txt'
 subsample_percent_file_handle = open(subsample_percent_file, 'w')
 subsample_percent_file_handle.write('Sample\tDepth\tPercent\tFinal_depth\n')
 subsample_percent_dict = {}

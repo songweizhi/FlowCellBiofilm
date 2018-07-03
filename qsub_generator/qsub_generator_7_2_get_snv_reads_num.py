@@ -12,8 +12,11 @@ email = 'wythe1987@163.com'
 modules_needed = ['python/3.5.2']
 
 wd = '/Users/songweizhi/Desktop'
-outputs_folder = 'qsub_get_SNV_reads_num'
-wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_reads_num'
+#outputs_folder = 'qsub_get_SNV_reads_num'
+outputs_folder = 'qsub_get_SNV_reads_num_subsampled'
+
+#wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_reads_num'
+wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_reads_num_subsampled'
 
 ###########################################################################################
 
@@ -43,14 +46,19 @@ for module in modules_needed:
 
 ################################################################
 sample_prefix_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/sample_prefix_combined.txt'
-bam_file_folder = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign'
-deepSNV_output_folder = '/srv/scratch/z5039045/Flow_cell_biofilm/4_deepSNV'
+#bam_file_folder = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign'
+bam_file_folder = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign_subsampled'
+
+#deepSNV_output_folder = '/srv/scratch/z5039045/Flow_cell_biofilm/4_1_deepSNV'
+deepSNV_output_folder = '/srv/scratch/z5039045/Flow_cell_biofilm/4_1_deepSNV_subsampled'
+
 pwd_python_script = '/srv/scratch/z5039045/Scripts/SNV_2_1_get_SNV_reads_num.py'
 
 for sample in open(sample_prefix_file):
     sample_id = sample.strip()
     pwd_bam_file = '%s/%s.bam' % (bam_file_folder, sample_id)
     cmd = 'python3 %s -bf %s -df %s -i %s' % (pwd_python_script, bam_file_folder, deepSNV_output_folder, sample_id)
+    print(cmd)
     output_handle = open('%s/qsub_get_SNV_reads_num_%s.sh' % (outputs_folder, sample_id), 'w')
     output_handle.write(header)
     output_handle.write(module_lines)
