@@ -108,7 +108,15 @@ def main(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, plot_filena
     plt.xticks(fontsize=7)
     plt.yticks(fontsize=7)
 
-    plt.ylim(ymin=0)
+    ymax = 0
+    if max(y) <= 5000:
+        ymax = 5000
+    elif (5000 < max(y) <= 10000):
+        ymax = 10000
+    else:
+        ymax = max(y)
+
+    plt.ylim(ymin=0, ymax=ymax)
 
     # add lines to specified positions
     if bps_to_marker != None:
