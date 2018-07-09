@@ -65,7 +65,6 @@ for sample in open(sample_prefix_file):
         deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/combined_references.fasta -q ../3_novoalign/%s.bam -c ../3_novoalign/coculture_D0.bam' % (sample_id)
 
     print(deepSNV_cmd)
-
     output_handle = open('%s/qsub_deepSNV_%s.sh' % (outputs_folder, sample_id), 'w')
     output_handle.write(header)
     output_handle.write(module_lines)
