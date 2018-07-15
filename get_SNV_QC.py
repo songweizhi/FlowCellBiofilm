@@ -2,7 +2,6 @@ import os
 import glob
 import shutil
 import argparse
-from Bio import SeqIO
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -153,6 +152,8 @@ optional.add_argument('-h', action='help', help='Show this help message and exit
 required.add_argument('-snv', dest='SNV', nargs='?', required=True,  type=str, help='deepSNV output folder')
 required.add_argument('-depth', dest='DEPTH', nargs='?', required=True,  type=str, help='depth file folder')
 required.add_argument('-ref', dest='REF', nargs='?', required=True, type=str, help='reference genome folder')
+required.add_argument('-flklen', dest='FLKLEN', nargs='?', required=True, type=int, help='flanking length to plot')
+required.add_argument('-kmer', dest='KMER', nargs='?', required=True, type=int, help='Kmer for plotting depth')
 required.add_argument('-deplen', dest='DEPLEN', nargs='?', required=True, type=int, help='flanking length for mean depth calculation')
 
 args = vars(parser.parse_args())
@@ -160,14 +161,13 @@ deepSNV_output_folder = args['SNV']
 depth_file_folder = args['DEPTH']
 reference_genome_folder = args['REF']
 flanking_length_for_mean_depth = args['DEPLEN']
-
-depth_flanking_length = 50000
-depth_kmer = 1000
+depth_flanking_length = args['FLKLEN']
+depth_kmer = args['KMER']
 
 
 # example cmd
 # cd /Users/songweizhi/Desktop/666666
-# python3 ~/PycharmProjects/FlowCellBiofilm/get_SNV_QC.py -snv 4_1_deepSNV -depth depth_files -ref 0_References -deplen 5000
+# python3 ~/PycharmProjects/FlowCellBiofilm/get_SNV_QC.py -snv 4_1_deepSNV -depth depth_files -ref 0_References -flklen 50000 -kmer 1000 -deplen 5000
 # python3 ~/PycharmProjects/FlowCellBiofilm/get_SNV_QC.py -snv -depth -ref -deplen -depdiff
 
 
@@ -185,29 +185,13 @@ ref_length_dict = {'2.10_chromosome': 3758219,
 
 output_folder = 'output_f%sbp_%smer_dl%sbp' % (depth_flanking_length, depth_kmer, flanking_length_for_mean_depth)
 
-deepSNV_output_combined = 'deepSNV_output_combined.txt'
+deepSNV_output_combined =    'deepSNV_output_combined.txt'
 deepSNV_output_combined_QC = 'deepSNV_output_combined_QC.txt'
-combined_existence_210 = 'deepSNV_output_summary_210_existence.txt'
-combined_existence_D2 =  'deepSNV_output_summary_D2_existence.txt'
-combined_frequency_210 = 'deepSNV_output_summary_210_frequency.txt'
-combined_frequency_D2 =  'deepSNV_output_summary_D2_frequency.txt'
-combined_existence_210_cdc = 'deepSNV_output_summary_210_existence_cdc.txt'
-combined_existence_D2_cdc =  'deepSNV_output_summary_D2_existence_cdc.txt'
-combined_frequency_210_cdc = 'deepSNV_output_summary_210_frequency_cdc.txt'
-combined_frequency_D2_cdc =  'deepSNV_output_summary_D2_frequency_cdc.txt'
-SNV_depth_plot = 'SNV_depth_plot'
+SNV_depth_plot =             'SNV_depth_plot'
 
-pwd_deepSNV_output_combined = '%s/%s' % (output_folder, deepSNV_output_combined)
+pwd_deepSNV_output_combined =    '%s/%s' % (output_folder, deepSNV_output_combined)
 pwd_deepSNV_output_combined_QC = '%s/%s' % (output_folder, deepSNV_output_combined_QC)
-pwd_combined_existence_210 = '%s/%s' % (output_folder, combined_existence_210)
-pwd_combined_existence_D2 =  '%s/%s' % (output_folder, combined_existence_D2)
-pwd_combined_frequency_210 = '%s/%s' % (output_folder, combined_frequency_210)
-pwd_combined_frequency_D2 =  '%s/%s' % (output_folder, combined_frequency_D2)
-pwd_combined_existence_210_cdc = '%s/%s' % (output_folder, combined_existence_210_cdc)
-pwd_combined_existence_D2_cdc =  '%s/%s' % (output_folder, combined_existence_D2_cdc)
-pwd_combined_frequency_210_cdc = '%s/%s' % (output_folder, combined_frequency_210_cdc)
-pwd_combined_frequency_D2_cdc =  '%s/%s' % (output_folder, combined_frequency_D2_cdc)
-pwd_SNV_depth_plot = '%s/%s' % (output_folder, SNV_depth_plot)
+pwd_SNV_depth_plot =             '%s/%s' % (output_folder, SNV_depth_plot)
 
 
 # create depth_plot_with_coverage_change_folder
