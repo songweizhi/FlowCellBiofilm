@@ -36,8 +36,12 @@ def take_kmer_mean(num_list, k_mer):
     return k_mer_average_list
 
 
-def get_flanking_total_depth(depth_file, seq_to_plot, each_snv_pos, mean_depth_start, mean_depth_end):
-
+def plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, each_snv_pos, mean_depth_start, mean_depth_end, k_mer, bps_to_marker, plot_filename):
+    #print('Extracting absolute depth from input file')
+    x = []
+    y = []
+    bp_num = 1
+    current_pos = 0
     total_depth_left_side = 0
     total_depth_right_side = 0
 
@@ -56,24 +60,6 @@ def get_flanking_total_depth(depth_file, seq_to_plot, each_snv_pos, mean_depth_s
             # get total_depth_right_side
             if each_snv_pos < pos <= mean_depth_end:
                 total_depth_right_side += depth
-
-    return total_depth_left_side, total_depth_right_side
-
-
-def plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, k_mer, bps_to_marker, plot_filename):
-
-    x = []
-    y = []
-    bp_num = 1
-    current_pos = 0
-
-    for each_base in open(depth_file):
-        each_base_split = each_base.strip().split('\t')
-        seq_id = each_base_split[0]
-        pos = int(each_base_split[1])
-        depth = int(each_base_split[2])
-
-        if seq_id == seq_to_plot:
 
             if pos < start_pos:
                 pass
@@ -126,11 +112,7 @@ def plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, k_mer, bps_to_ma
     plt.plot(x, y, color="skyblue", alpha=0.7, linewidth=0.7)
 
     # titles
-    plot_filename_new = ''
-    if '/' in plot_filename:
-        plot_filename_new = plot_filename.split('/')[-1]
-
-    plt.title(plot_filename_new, fontsize=7)
+    plt.title(plot_filename,fontsize=7)
     plt.xlabel('Position (bp)', fontsize=10)
     plt.ylabel('Depth (X)', fontsize=10)
 
@@ -156,6 +138,8 @@ def plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, k_mer, bps_to_ma
     # Get plot
     plt.savefig('%s.png' % plot_filename, dpi=300)
     plt.close()
+
+    return total_depth_left_side, total_depth_right_side
 
 
 ########################################## specify input files and parameters ##########################################
@@ -184,13 +168,7 @@ depth_kmer = args['KMER']
 # example cmd
 # cd /Users/songweizhi/Desktop/666666
 # python3 ~/PycharmProjects/FlowCellBiofilm/get_SNV_QC.py -snv 4_1_deepSNV -depth depth_files -ref 0_References -flklen 50000 -kmer 1000 -deplen 5000
-
-# cd /srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_QC
-# module load python/3.5.2
-# python3 /srv/scratch/z5039045/Scripts/get_SNV_QC.py -snv ../4_1_deepSNV -depth ../3_novoalign -ref ../0_References -flklen 50000 -kmer 1000 -deplen 500
-# python3 /srv/scratch/z5039045/Scripts/get_SNV_QC.py -snv ../4_1_deepSNV -depth ../3_novoalign -ref ../0_References -flklen 50000 -kmer 1000 -deplen 1000
-# python3 /srv/scratch/z5039045/Scripts/get_SNV_QC.py -snv ../4_1_deepSNV -depth ../3_novoalign -ref ../0_References -flklen 50000 -kmer 1000 -deplen 2000
-# python3 /srv/scratch/z5039045/Scripts/get_SNV_QC.py -snv ../4_1_deepSNV -depth ../3_novoalign -ref ../0_References -flklen 50000 -kmer 1000 -deplen 5000
+# python3 ~/PycharmProjects/FlowCellBiofilm/get_SNV_QC.py -snv -depth -ref -deplen -depdiff
 
 
 ################################################### experiment design ##################################################
@@ -222,8 +200,11 @@ if os.path.isdir(output_folder):
     if os.path.isdir(output_folder):
         shutil.rmtree(output_folder, ignore_errors=True)
     os.makedirs(output_folder)
+    os.makedirs(pwd_SNV_depth_plot)
+
 else:
     os.makedirs(output_folder)
+    os.makedirs(pwd_SNV_depth_plot)
 
 
 ################################################ combine deepSNV output ################################################
@@ -245,13 +226,11 @@ deepSNV_output_combined_handle.close()
 
 
 ########################################## quality filtering of detected SNVs ##########################################
-print('Quality assessment of detected SNVs')
+
 snv_num_overall = 0
 deepSNV_output_combined_QC_handle = open(pwd_deepSNV_output_combined_QC, 'w')
-deepSNV_output_combined_QC_handle.write('sample,chr,pos,ref,var,p_val,freq_var,n_tst_b,n_tst_fw,n_tst_bw,strand_bias,mean_depth_len,mean_depth_left,mean_depth_right,mean_depth_diff\n')
-deepSNV_output_combined_QC_handle.close()
-snv_flanking_depth_diff_dict = {}
 
+deepSNV_output_combined_QC_handle.write('sample,chr,pos,ref,var,p_val,freq_var,n_tst_b,n_tst_fw,n_tst_bw,strand_bias,mean_depth_len,mean_depth_left,mean_depth_right,mean_depth_diff,mean_depth_cate\n')
 for each_snv in open(pwd_deepSNV_output_combined):
     snv_num_overall += 1
     each_snv_split = each_snv.strip().split(',')
@@ -274,11 +253,20 @@ for each_snv in open(pwd_deepSNV_output_combined):
     strand_bias_value = abs((n_tst_fw / n_test_both_direction) - (cov_tst_fw / each_snv_cov_both_direction)) * 100
     strand_bias_value = float("{0:.2f}".format(strand_bias_value))
 
-
-############################################# get flanking depth difference ############################################
+############################################## plot SNV depth and position #############################################
 
     # plot depth
     pwd_depth_file = '%s/%s.depth' % (depth_file_folder, each_snv_sample)
+
+    # get start position to plot
+    plot_start = each_snv_pos - depth_flanking_length
+    if plot_start <= 0:
+        plot_start = 1
+
+    # get end position to plot
+    plot_end = each_snv_pos + depth_flanking_length
+    if plot_end >= ref_length_dict[each_snv_chr]:
+        plot_end = ref_length_dict[each_snv_chr]
 
     # get start position to calculate mean depth
     mean_depth_start = each_snv_pos - flanking_length_for_mean_depth
@@ -290,8 +278,13 @@ for each_snv in open(pwd_deepSNV_output_combined):
     if mean_depth_end >= ref_length_dict[each_snv_chr]:
         mean_depth_end = ref_length_dict[each_snv_chr]
 
+    # png file name
+    each_snv_id_modified = '_'.join(each_snv_key_no_sample_id.split('|'))
+    plot_file_name = '%s_%s_f%sbp_%smer' % (each_snv_id_modified, each_snv_sample, depth_flanking_length, depth_kmer)
+    pwd_plot_file_name = '%s/%s' % (pwd_SNV_depth_plot, plot_file_name)
+
     # plot depth
-    total_depth_left_side, total_depth_right_side = get_flanking_total_depth(pwd_depth_file, each_snv_chr, each_snv_pos, mean_depth_start, mean_depth_end)
+    total_depth_left_side, total_depth_right_side = plot_sam_depth(pwd_depth_file, each_snv_chr, plot_start, plot_end, each_snv_pos, mean_depth_start, mean_depth_end, depth_kmer, str(each_snv_pos), pwd_plot_file_name)
 
     # mean depth of the two sides
     mean_depth_left = total_depth_left_side/flanking_length_for_mean_depth
@@ -302,9 +295,12 @@ for each_snv in open(pwd_deepSNV_output_combined):
     mean_depth_big = sorted([mean_depth_left, mean_depth_right])[1]
     mean_depth_difference = (1 - (mean_depth_small/mean_depth_big))*100
     mean_depth_difference = float("{0:.2f}".format(mean_depth_difference))
-    snv_flanking_depth_diff_dict[each_snv_key_with_sample_id] = mean_depth_difference
 
-    deepSNV_output_combined_QC_handle = open(pwd_deepSNV_output_combined_QC, 'a')
+    plot_file_name_new = '%s_%s_f%sbp_%smer_md%sbp_%s' % (each_snv_id_modified, each_snv_sample, depth_flanking_length, depth_kmer, flanking_length_for_mean_depth, mean_depth_difference)
+    pwd_plot_file_name_new = '%s/%s' % (pwd_SNV_depth_plot, plot_file_name_new)
+
+    os.system('mv %s.png %s.png' % (pwd_plot_file_name, pwd_plot_file_name_new))
+
     deepSNV_output_combined_QC_handle.write('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' % (each_snv_sample,
                                                                                                    each_snv_chr,
                                                                                                    each_snv_pos,
@@ -320,42 +316,4 @@ for each_snv in open(pwd_deepSNV_output_combined):
                                                                                                    mean_depth_left,
                                                                                                    mean_depth_right,
                                                                                                    mean_depth_difference))
-    deepSNV_output_combined_QC_handle.close()
-
-
-############################################## plot SNV depth and position #############################################
-
-print('Plotting depth for detected SNVs')
-
-os.makedirs(pwd_SNV_depth_plot)
-
-for each_snv in open(pwd_deepSNV_output_combined):
-    each_snv_split = each_snv.strip().split(',')
-    each_snv_sample = each_snv_split[0]
-    each_snv_chr = each_snv_split[1]
-    each_snv_pos = int(each_snv_split[2])
-    each_snv_ref = each_snv_split[3]
-    each_snv_var = each_snv_split[4]
-    each_snv_key_no_sample_id = '%s|%s|%s|%s' % (each_snv_chr, each_snv_pos, each_snv_ref, each_snv_var)
-    each_snv_key_with_sample_id = '%s|%s|%s|%s|%s' % (each_snv_sample, each_snv_chr, each_snv_pos, each_snv_ref, each_snv_var)
-
-    # plot depth
-    pwd_depth_file = '%s/%s.depth' % (depth_file_folder, each_snv_sample)
-
-    # get start position to plot
-    plot_start = each_snv_pos - depth_flanking_length
-    if plot_start <= 0:
-        plot_start = 1
-
-    # get end position to plot
-    plot_end = each_snv_pos + depth_flanking_length
-    if plot_end >= ref_length_dict[each_snv_chr]:
-        plot_end = ref_length_dict[each_snv_chr]
-
-    # png file name
-    each_snv_id_modified = '_'.join(each_snv_key_no_sample_id.split('|'))
-    plot_file_name = '%s_%s_f%sbp_%smer_md%sbp_%s' % (each_snv_id_modified, each_snv_sample, depth_flanking_length, depth_kmer, flanking_length_for_mean_depth, snv_flanking_depth_diff_dict[each_snv_key_with_sample_id])
-    pwd_plot_file_name = '%s/%s' % (pwd_SNV_depth_plot, plot_file_name)
-
-    # plot depth
-    plot_sam_depth(pwd_depth_file, each_snv_chr, plot_start, plot_end, depth_kmer, str(each_snv_pos), pwd_plot_file_name)
+deepSNV_output_combined_QC_handle.close()
