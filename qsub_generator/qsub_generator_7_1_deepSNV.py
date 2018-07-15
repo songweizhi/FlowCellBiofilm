@@ -12,8 +12,8 @@ email = 'wythe1987@163.com'
 modules_needed = ['python/3.5.2', 'R/3.4.2']
 
 wd = '/Users/songweizhi/Dropbox/Research/Flow_cell'
-outputs_folder = 'qsub_deepSNV'
-wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_1_deepSNV'
+outputs_folder = 'qsub_deepSNV_subsampled_default_sig_level'
+wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_1_deepSNV_subsampled_default_sig_level'
 sample_prefix_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/sample_group.txt'
 
 ###########################################################################################

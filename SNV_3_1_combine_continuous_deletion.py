@@ -3,6 +3,7 @@ import os
 
 #wd = '/Users/songweizhi/Desktop/FC'
 wd = '/Users/songweizhi/Dropbox/Research/Flow_cell/deepSNV_summary_subsampled'
+wd = '/Users/songweizhi/Desktop/666666'
 
 deepSNV_output = 'deepSNV_output_summary_all_existence.txt'
 #deepSNV_output = 'deepSNV_output_summary_all_frequency.txt'
@@ -12,6 +13,7 @@ deepSNV_output = 'deepSNV_output_summary_all_existence.txt'
 
 #deepSNV_output = 'deepSNV_output_summary_D2_existence.txt'
 #deepSNV_output = 'deepSNV_output_summary_D2_frequency.txt'
+deepSNV_output = 'deepSNV_output_summary_all_existence.txt'
 
 
 # prepare output file name

@@ -12,8 +12,8 @@ email = 'wythe1987@163.com'
 modules_needed = ['python/3.5.2', 'R/3.4.2']
 
 wd = '/Users/songweizhi/Desktop/'
-outputs_folder = 'qsub_deepSNV_subsampled'
-wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_1_deepSNV_subsampled'
+outputs_folder = 'qsub_deepSNV_subsampled_default_0.05'
+wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_1_deepSNV_subsampled_default_0.05'
 sample_prefix_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/sample_group.txt'
 
 ###########################################################################################
@@ -56,13 +56,13 @@ for sample in open(sample_prefix_file):
 
     deepSNV_cmd = ''
     if sample_group == 'mono_210':
-        deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/2.10wt_illumina.fasta -q ../3_novoalign/subsampled/%s.bam -c ../3_novoalign/subsampled/210WTD0.bam' % (sample_id)
+        deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/2.10wt_illumina.fasta -q ../3_novoalign_subsampled/%s.bam -c ../3_novoalign_subsampled/210WTD0.bam' % (sample_id)
 
     if sample_group == 'mono_D2':
-        deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/D2_pacbio.fasta -q ../3_novoalign/subsampled/%s.bam -c ../3_novoalign/subsampled/D2D0.bam' % (sample_id)
+        deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/D2_pacbio.fasta -q ../3_novoalign_subsampled/%s.bam -c ../3_novoalign_subsampled/D2D0.bam' % (sample_id)
 
     if sample_group == 'coculture':
-        deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/combined_references.fasta -q ../3_novoalign/subsampled/%s.bam -c ../3_novoalign/subsampled/coculture_D0.bam' % (sample_id)
+        deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/combined_references.fasta -q ../3_novoalign_subsampled/%s.bam -c ../3_novoalign_subsampled/coculture_D0.bam' % (sample_id)
 
     print(deepSNV_cmd)
 

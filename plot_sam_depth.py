@@ -36,7 +36,7 @@ def take_kmer_mean(num_list, k_mer):
     return k_mer_average_list
 
 
-def main(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, plot_filename):
+def plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, plot_filename):
     #print('Extracting absolute depth from input file')
     x = []
     y = []
@@ -184,7 +184,7 @@ if seq_to_plot != None:
     print('Processing %s' % seq_to_plot)
     if plot_filename == None:
         plot_filename = '%s__%s__%s-%sbp__%smer' % (depth_file_basename, seq_to_plot, start_pos, end_pos, k_mer)
-    main(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, plot_filename)
+    plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, plot_filename)
 
 if seq_to_plot == None:
 
@@ -192,4 +192,4 @@ if seq_to_plot == None:
         print('Processing %s' % each_ctg.id)
         if plot_filename == None:
             plot_filename = '%s__%s__%s-%sbp__%smer' % (depth_file_basename, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], k_mer)
-        main(depth_file, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], bps_to_marker, plot_filename)
+        plot_sam_depth(depth_file, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], bps_to_marker, plot_filename)

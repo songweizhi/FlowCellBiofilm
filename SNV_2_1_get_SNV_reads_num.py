@@ -28,7 +28,7 @@ def get_depth_and_snv_reads_num(input_bam_file, detected_snv):
                 elif pileupread.is_refskip:
                     current_bp = 'S'
                 else:
-                    current_bp = pileupread.alignment.query_sequence[pileupread.query_position]
+                    current_bp = pileupread.alignment.query_sequence[pileupread.query_position]  # also need to consider the backward strand, in which case get the number of complementary base
                 mapped_ncs.append(current_bp)
 
             current_pos_depth = pileupcolumn.n
