@@ -8,8 +8,8 @@ SNV_quality_file = 'deepSNV_output_combined_QC.txt'
 min_var_reads_num = 10
 min_at_each_direction = 1
 strand_bias_cutoff = 20
-depth_difference_cutoff = 20
-
+depth_difference_cutoff = 15
+mean_depth_len = 2000
 os.chdir(wd)
 
 
@@ -62,10 +62,33 @@ for each_snv in open(SNV_quality_file):
 
         total_num += 1
 
+# report
 print('The total number of detected SNVs: %s' % total_num)
+print('The number of SNVs with less than %s reads harboring it: %s' % (min_var_reads_num, len(n_tst_total_unqualified)))
+print('The number of SNVs with reads only from one direction: %s' % len(n_tst_each_unqualified))
+print('The number of SNVs with strand bias higher than %s%s: %s' % (strand_bias_cutoff, '%',len(strand_bias_unqualified)))
+print('The number of SNVs with flanking depth (%sbp) difference higher than %s%s: %s' % (mean_depth_len, depth_difference_cutoff, '%', len(depth_diff_unqualified)))
 print('The number of qualified SNVs: %s' % len(qualified_SNVs))
 
-print(len(n_tst_total_unqualified))
-print(len(n_tst_each_unqualified))
-print(len(strand_bias_unqualified))
-print(len(depth_diff_unqualified))
+
+################################### get matrix for SNVs with similar flanking depth ####################################
+
+
+
+
+
+################################## get matrix for SNVs with different flanking depth ###################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
