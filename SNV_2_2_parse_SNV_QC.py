@@ -174,6 +174,12 @@ def get_summary_matrix(SNV_file_in):
     combine_continuous_deletion(SNV_file_out_existence_D2, SNV_file_out_existence_D2_cdc)
     combine_continuous_deletion(SNV_file_out_frequency_D2, SNV_file_out_frequency_D2_cdc)
 
+    # delete tmp files
+    os.system('rm %s' % SNV_file_out_existence_210)
+    os.system('rm %s' % SNV_file_out_frequency_210)
+    os.system('rm %s' % SNV_file_out_existence_D2)
+    os.system('rm %s' % SNV_file_out_frequency_D2)
+
 
 ########################################## specify input files and parameters ##########################################
 
@@ -280,10 +286,7 @@ print('The number of qualified SNVs with different flanking depth: %s' % len(qua
 get_summary_matrix(qualified_SNVs_even_flanking_depth_file)
 get_summary_matrix(qualified_SNVs_diff_flanking_depth_file)
 
-
-
-
-
+os.system('rm *_existence_cdc.txt')
 
 
 
