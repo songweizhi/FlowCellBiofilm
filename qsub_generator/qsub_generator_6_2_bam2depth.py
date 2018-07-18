@@ -12,9 +12,12 @@ email = 'wythe1987@163.com'
 modules_needed = ['samtools/1.7']
 
 wd = '/Users/songweizhi/Dropbox/Research/Flow_cell'
-outputs_folder = 'qsub_bam2depth'
 
-wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign'
+#outputs_folder = 'qsub_bam2depth'
+outputs_folder = 'qsub_bam2depth_subsampled'
+
+#wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign'
+wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign_subsampled'
 
 ###########################################################################################
 
@@ -44,11 +47,11 @@ for module in modules_needed:
 
 
 ################################################################
-sample_prefix_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/sample_prefix_combined.txt'
+sample_prefix_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/bam2depth_subsampled_sample_id.txt'
 
 for each in open(sample_prefix_file):
     each = each.strip()
-    output_handle = open('%s/qsub_bam2depth_%s.sh' % (outputs_folder, each), 'w')
+    output_handle = open('%s/qsub_bam2depth_subsampled_%s.sh' % (outputs_folder, each), 'w')
     output_handle.write(header)
     output_handle.write(module_lines)
     output_handle.write('cd %s\n' % wd_on_katana)

@@ -1,5 +1,5 @@
 import os
-
+import argparse
 
 def combine_continuous_deletion(file_in, file_out):
 
@@ -183,14 +183,33 @@ def get_summary_matrix(SNV_file_in):
 
 ########################################## specify input files and parameters ##########################################
 
-wd = '/Users/songweizhi/Desktop/666666'
-SNV_quality_file = 'deepSNV_output_combined_QC.txt'
-min_var_reads_num = 10
-min_at_each_direction = 1
-strand_bias_cutoff = 20
-depth_difference_cutoff = 15
-mean_depth_len = 2000
-os.chdir(wd)
+parser = argparse.ArgumentParser(description='', add_help=False)
+required = parser.add_argument_group('required arguments')
+optional = parser.add_argument_group('optional arguments')
+
+optional.add_argument('-h', action='help', help='Show this help message and exit')
+required.add_argument('-snv_qc', dest='SNV_QC', nargs='?', required=True,  type=str, help='deepSNV QC file')
+required.add_argument('-min_both', dest='MIN_BOTH', nargs='?', required=True, type=int, help='The minimum number of reads harboring SNV')
+required.add_argument('-min_each', dest='MIN_EACH', nargs='?', required=True, type=int, help='The minimum number of reads harboring SNV at each direction')
+required.add_argument('-strand_bias', dest='STRAND_BIAS', nargs='?', required=True, type=int, help='strand_bias cutoff')
+required.add_argument('-depth_diff', dest='DEPTH_DIFF', nargs='?', required=True,  type=int, help='depth difference cutoff')
+required.add_argument('-deplen', dest='DEPLEN', nargs='?', required=True, type=int, help='flanking length for mean depth calculation')
+
+args = vars(parser.parse_args())
+SNV_quality_file = args['SNV_QC']
+depth_difference_cutoff = args['DEPTH_DIFF']
+strand_bias_cutoff = args['STRAND_BIAS']
+mean_depth_len = args['DEPLEN']
+min_var_reads_num = args['MIN_BOTH']
+min_at_each_direction = args['MIN_EACH']
+
+#SNV_quality_file = 'deepSNV_output_combined_QC.txt'
+#SNV_quality_file = 'deepSNV_output_combined_QC_subsampled.txt'
+#min_var_reads_num = 10
+#min_at_each_direction = 1
+#strand_bias_cutoff = 20
+#depth_difference_cutoff = 15
+#mean_depth_len = 2000
 
 
 ############################################ define the name of output files ###########################################
@@ -198,8 +217,11 @@ os.chdir(wd)
 matrix_header_210 = ['1D9', '1D18', '1D27', '1D42', '5D9', '5D18', '5D27', '5D42', '9D9', '9D18', '9D27', '9D42', '4D9', '4D18', '4D27', '4D42', '8D9', '8D18', '8D27', '8D42', '12D9', '12D18', '12D27', '12D42']
 matrix_header_D2 = ['2D9', '2D18', '2D27', '2D42', '6D9', '6D18', '6D27', '6D42', '10D9', '10D18', '10D27', '10D42', '4D9', '4D18', '4D27', '4D42', '8D9', '8D18', '8D27', '8D42', '12D9', '12D18', '12D27', '12D42']
 
-qualified_SNVs_even_flanking_depth_file = 'deepSNV_output_qualified_even_flanking_depth.txt'
-qualified_SNVs_diff_flanking_depth_file = 'deepSNV_output_qualified_diff_flanking_depth.txt'
+SNV_quality_file_path, SNV_quality_file_name = os.path.split(SNV_quality_file)
+SNV_quality_file_basename, SNV_quality_file_ext = os.path.splitext(SNV_quality_file_name)
+
+qualified_SNVs_even_flanking_depth_file = '%s_qualified_even_depth.txt' % SNV_quality_file_basename
+qualified_SNVs_diff_flanking_depth_file = '%s_qualified_diff_depth.txt' % SNV_quality_file_basename
 
 
 ############################################ parse quality of detected SNVs ############################################
@@ -286,7 +308,6 @@ print('The number of qualified SNVs with different flanking depth: %s' % len(qua
 get_summary_matrix(qualified_SNVs_even_flanking_depth_file)
 get_summary_matrix(qualified_SNVs_diff_flanking_depth_file)
 
-os.system('rm *_existence_cdc.txt')
-
-
-
+#os.system('rm *_existence_cdc.txt')
+os.system('rm %s' % qualified_SNVs_even_flanking_depth_file)
+os.system('rm %s' % qualified_SNVs_diff_flanking_depth_file)
