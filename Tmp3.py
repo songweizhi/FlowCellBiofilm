@@ -1,27 +1,31 @@
 
 
-gene_list_1 = []
-for each_1 in open('/Users/songweizhi/Desktop/FC/deepSNV_mutated_gene_copy.txt'):
-    gene = each_1.strip().split('\t')[3]
-    if gene not in gene_list_1:
-        gene_list_1.append(gene)
+file_in = '/Users/songweizhi/Desktop/FC_000/SNV_QC_even_depth_matrix_D2_frequency_cdc_mutated_genes.txt'
+file_out = '/Users/songweizhi/Desktop/FC_000/SNV_QC_even_depth_matrix_D2_frequency_cdc_mutated_genes_category.txt'
 
-print(gene_list_1)
+def get_mutation_cate_summary(file_in, file_out):
 
-print(len(gene_list_1))
+    mutation_cate_dict = {}
+    for each_snv in open(file_in):
+        each_snv_split = each_snv.strip().split('\t')
+        mutated_gene = each_snv_split[3]
+        mutation_cate = each_snv_split[5]
 
+        if mutated_gene != 'NA':
+            if mutated_gene not in mutation_cate_dict:
+                mutation_cate_dict[mutated_gene] = [mutation_cate]
+            else:
+                mutation_cate_dict[mutated_gene].append(mutation_cate)
 
-gene_list_2 = []
-for each_2 in open('/Users/songweizhi/Desktop/FC/deepSNV_mutated_gene_sorted.txt'):
-    gene2 = each_2.strip().split('\t')[3]
-    if gene2 not in gene_list_2:
-        gene_list_2.append(gene2)
+    mutation_cate_list = ['Missense', 'Nonsense', 'Silent', 'Fragment_deletion', 'Frameshift']
 
-print(gene_list_2)
-print(len(gene_list_2))
+    file_out_handle = open(file_out, 'w')
+    file_out_handle.write('\tMis\tNon\tSilen\tFD\tFS\n')
+    for each_gene in mutation_cate_dict:
 
-print(gene_list_1 == gene_list_2)
+        mutation_cate_occurence = []
+        for each_cate in mutation_cate_list:
+            mutation_cate_occurence.append(str(mutation_cate_dict[each_gene].count(each_cate)))
+        file_out_handle.write('%s\t%s\n' % (each_gene, '\t'.join(mutation_cate_occurence)))
 
-
-
-print(len(set(gene_list_1).intersection(gene_list_2)))
+    file_out_handle.close()

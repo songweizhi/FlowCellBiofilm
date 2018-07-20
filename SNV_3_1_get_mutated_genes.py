@@ -26,12 +26,13 @@ combined_ref_fasta = 'combined_ref.fasta'
 deepSNV_output = 'SNV_QC.txt'
 transl_table = 11
 
-# output files
-output = 'deepSNV_mutated_gene.txt'
-output_sorted = 'deepSNV_mutated_gene_sorted.txt'
 
+# output files
+output_tmp = 'deepSNV_mutated_gene_tmp.txt'
+output_sorted = 'deepSNV_mutated_gene.txt'
 # output_seq_nc = 'deepSNV_mutated_gene_nc.fasta'
 # output_seq_aa = 'deepSNV_mutated_gene_aa.fasta'
+
 
 # forward to working directory
 os.chdir(wd)
@@ -86,7 +87,7 @@ for each_cds in open(combined_ref_gff):
             coding_region_dict[seq_id].append(each_pos)
 
 
-output_handle = open(output, 'w')
+output_handle = open(output_tmp, 'w')
 for each_snv in open(deepSNV_output):
     if not each_snv.startswith('sample'):
         each_snv_seq = each_snv.strip().split(',')[1]
@@ -173,12 +174,13 @@ for each_snv in open(deepSNV_output):
 output_handle.close()
 
 
-os.system('cat %s | sort | uniq > %s' % (output, output_sorted))
+os.system('cat %s | sort > %s' % (output_tmp, output_sorted))
+os.system('rm %s' % (output_tmp))
 
 
 # get the list of affected genes
 affected_gene_list_overall = []
-for each_snv2 in open(output):
+for each_snv2 in open(output_tmp):
     affected_gene = each_snv2.strip().split('\t')[3]
     if (affected_gene != 'NA') and (affected_gene not in affected_gene_list_overall):
         affected_gene_list_overall.append(affected_gene)
@@ -197,4 +199,3 @@ print('The total number of affected genes: %s' % len(affected_gene_list_overall)
 #     if each_gene_aa.id in affected_gene_list_overall:
 #         SeqIO.write(each_gene_aa, output_seq_aa_handle, 'fasta')
 # output_seq_aa_handle.close()
-
