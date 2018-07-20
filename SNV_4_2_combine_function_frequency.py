@@ -18,11 +18,11 @@ def get_affect(frequency_list, plot_filename):
     slope, intercept, r_value, p_value, std_err = stats.linregress(time_point_rescaled_arrary, frequency_arrary)
 
     if frequency_arrary[-1] >= 25:
-        affect = 'Beneficial'
+        affect = 'Positive'
     elif (slope > 0) and (max_frequency >= 10):
-        affect = 'Beneficial'
+        affect = 'Positive'
     elif (slope < 0) and (max_frequency <= 10):
-        affect = 'Harmful'
+        affect = 'Negative'
     else:
         affect = 'Neutral'
 
@@ -67,6 +67,8 @@ for each_snv in open(deepSNV_op_cdc):
 
     if not each_snv.startswith('\t'):
         each_snv_split = each_snv.strip().split('\t')
+        print(each_snv_split)
+
         snv_id = each_snv_split[0]
         occur_profile = []
 
@@ -181,13 +183,3 @@ for each_snv2 in open(deepSNV_mutated_genes):
 
     for_out = '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv2_split[0], SNV_co_occurrence_dict[snv_id2], each_snv2_split[1], each_snv2_split[2], each_snv2_split[3], each_snv2_split[4], each_snv2_split[5], current_KO_id, current_COG_cat, current_COG_id, current_COG_function)
     output_combined_handle.write(for_out)
-
-
-
-
-
-
-
-
-
-

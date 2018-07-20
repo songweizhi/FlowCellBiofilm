@@ -15,15 +15,13 @@ modules_needed = ['python/3.5.2']
 wd = '/Users/songweizhi/Desktop/666666'
 
 strain = '210'
-strain = 'D2'
+#strain = 'D2'
 flanking_length = 100000
 
 outputs_folder = 'qsub_plot_diff_flanking_depth_SNVs_%s_%sbp' % (strain, flanking_length)
 wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_4_plot_diff_flanking_depth_SNVs_%sbp' % (flanking_length)
-
 plot_sam_depth_script = '/srv/scratch/z5039045/Scripts/plot_sam_depth.py'
 snv_cdc_file = 'deepSNV_output_qualified_diff_flanking_depth_summary_%s_frequency_cdc.txt' % strain
-
 kmer = 1000
 
 reference_dict = {'1': '2.10wt_illumina.fasta',

@@ -181,18 +181,6 @@ depth_flanking_length = args['FLKLEN']
 depth_kmer = args['KMER']
 
 
-# example cmd
-# cd /Users/songweizhi/Desktop/666666
-# python3 ~/PycharmProjects/FlowCellBiofilm/get_SNV_QC.py -snv 4_1_deepSNV -depth depth_files -ref 0_References -flklen 50000 -kmer 1000 -deplen 5000
-
-# cd /srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_QC
-# module load python/3.5.2
-# python3 /srv/scratch/z5039045/Scripts/get_SNV_QC.py -snv ../4_1_deepSNV -depth ../3_novoalign -ref ../0_References -flklen 50000 -kmer 1000 -deplen 500
-# python3 /srv/scratch/z5039045/Scripts/get_SNV_QC.py -snv ../4_1_deepSNV -depth ../3_novoalign -ref ../0_References -flklen 50000 -kmer 1000 -deplen 1000
-# python3 /srv/scratch/z5039045/Scripts/get_SNV_QC.py -snv ../4_1_deepSNV -depth ../3_novoalign -ref ../0_References -flklen 50000 -kmer 1000 -deplen 2000
-# python3 /srv/scratch/z5039045/Scripts/get_SNV_QC.py -snv ../4_1_deepSNV -depth ../3_novoalign -ref ../0_References -flklen 50000 -kmer 1000 -deplen 5000
-
-
 ################################################### experiment design ##################################################
 
 ref_length_dict = {'2.10_chromosome': 3758219,
@@ -207,8 +195,8 @@ ref_length_dict = {'2.10_chromosome': 3758219,
 
 output_folder = 'output_f%sbp_%smer_dl%sbp' % (depth_flanking_length, depth_kmer, flanking_length_for_mean_depth)
 
-deepSNV_output_combined =    'deepSNV_output_combined.txt'
-deepSNV_output_combined_QC = 'deepSNV_output_combined_QC.txt'
+deepSNV_output_combined =    'SNV_combined.txt'
+deepSNV_output_combined_QC = 'SNV_QC.txt'
 SNV_depth_plot =             'SNV_depth_plot'
 
 pwd_deepSNV_output_combined =    '%s/%s' % (output_folder, deepSNV_output_combined)
