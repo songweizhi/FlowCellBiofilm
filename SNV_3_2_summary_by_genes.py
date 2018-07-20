@@ -197,4 +197,3 @@ print('The total number of affected genes: %s' % len(affected_gene_list_overall)
 #     if each_gene_aa.id in affected_gene_list_overall:
 #         SeqIO.write(each_gene_aa, output_seq_aa_handle, 'fasta')
 # output_seq_aa_handle.close()
-
