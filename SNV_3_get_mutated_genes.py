@@ -76,6 +76,7 @@ combined_ref_ffn = args['ffn']
 combined_ref_faa = args['faa']
 
 annotation_file = 'combined_ref_aa.faa.COG.arCOG.kegg'
+#effect_file = 'SNV_QC_diff_depth_matrix_210_frequency_cdc_mutation_effect.txt'
 
 transl_table = 11
 
@@ -85,6 +86,12 @@ SNV_matrix_cdc_path, SNV_matrix_cdc_basename, SNV_matrix_cdc_ext = sep_path_base
 output_mutated_genes = '%s_mutated_genes.txt' % SNV_matrix_cdc_basename
 output_mutated_genes_cate = '%s_mutated_genes_category.txt' % SNV_matrix_cdc_basename
 output_mutated_genes_cate_fun = '%s_mutated_genes_cate_fun.txt' % SNV_matrix_cdc_basename
+
+output_summary = '%s_summary.txt' % SNV_matrix_cdc_basename
+
+effect_file = '%s_mutation_effect.txt' % SNV_matrix_cdc_basename
+
+
 
 output_seq_nc = '%s_mutated_genes_nc.fasta' % SNV_matrix_cdc_basename
 output_seq_aa = '%s_mutated_genes_aa.fasta' % SNV_matrix_cdc_basename
@@ -267,6 +274,8 @@ mutation_cate_dict = get_mutation_cate_summary(output_mutated_genes, output_muta
 print('The number of affected genes: %s' % len(mutation_cate_dict))
 
 
+################################################### export sequences ###################################################
+
 # get the sequence of affected genes
 output_seq_nc_handle = open(output_seq_nc, 'w')
 for each_gene_nc in SeqIO.parse(combined_ref_ffn, 'fasta'):
@@ -280,6 +289,8 @@ for each_gene_aa in SeqIO.parse(combined_ref_faa, 'fasta'):
         SeqIO.write(each_gene_aa, output_seq_aa_handle, 'fasta')
 output_seq_aa_handle.close()
 
+
+################################################### combine function ###################################################
 
 # store annotation results in dicts
 gene_KO_id_dict = {}
@@ -328,4 +339,49 @@ for each_mutated_gene in open(output_mutated_genes_cate):
 
 output_mutated_genes_cate_fun_handle.close()
 
+
+############################################### combine mutation effect ################################################
+
+snv_effect_dict = {}
+for each_effect in open(effect_file):
+    each_effect_split = each_effect.strip().split('\t')
+    snv_id = each_effect_split[0]
+    effects = each_effect_split[1]
+    snv_effect_dict[snv_id] = effects
+
+
+output_summary_handle = open(output_summary, 'w')
+for each_snv4 in open(output_mutated_genes):
+    snv_id4 = each_snv4.strip().split('\t')[0]
+    gene_id4 = each_snv4.strip().split('\t')[3]
+    effect = ''
+    if snv_id4 in snv_effect_dict:
+        effect = snv_effect_dict[snv_id4]
+    else:
+        effect = 'NA'
+
+    current_COG_id2 = ''
+    current_COG_cat2 = ''
+    current_COG_function2 = ''
+    if gene_id4 in gene_COG_id_dict:
+        current_COG_id2 = gene_COG_id_dict[gene_id4]
+        current_COG_cat2 = gene_COG_cat_dict[gene_id4]
+        current_COG_function2 = gene_COG_function_dict[gene_id4]
+    else:
+        current_COG_id2 = 'NA'
+        current_COG_cat2 = 'NA'
+        current_COG_function2 = 'NA'
+
+    for_write2 = '%s\t%s\t%s\t%s\t%s\n' % (each_snv4.strip(), effect, current_COG_cat2, current_COG_id2, current_COG_function2)
+    output_summary_handle.write(for_write2)
+output_summary_handle.close()
+
+
+################################################### remove tmp file ####################################################
+
+os.system('rm %s' % output_mutated_genes_cate)
+os.system('rm %s' % output_mutated_genes)
+
+os.system('rm %s' % output_seq_nc)
+os.system('rm %s' % output_seq_aa)
 
