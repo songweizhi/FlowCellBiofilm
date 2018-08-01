@@ -459,3 +459,11 @@ os.system('rm %s' % output_mutated_genes_cate)
 os.system('rm %s' % output_mutated_genes)
 os.system('rm %s' % output_seq_nc)
 os.system('rm %s' % output_seq_aa)
+
+
+
+
+
+
+
+
