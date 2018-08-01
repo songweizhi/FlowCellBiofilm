@@ -61,6 +61,50 @@ def get_mutation_cate_summary(file_in, file_out):
     return mutation_cate_dict
 
 
+def check_existence(num_list_1, num_list_2):
+
+    existence_list = []
+    for each_num in num_list_1:
+        if each_num in num_list_2:
+            existence_list.append(1)
+        else:
+            existence_list.append(0)
+
+    if 1 in existence_list:
+        return True
+    else:
+        return False
+
+
+def check_parallel(effects):
+
+    effect_list = effects.split('|')
+
+    treatment_id_list = []
+    for each_effect in effect_list:
+        each_effect_treatment_id = int(each_effect.split('_')[0])
+        treatment_id_list.append(each_effect_treatment_id)
+
+    SNV_type = ''
+
+    if (len(treatment_id_list) == 1) and ((check_existence(treatment_id_list, [1, 5, 9]) is True) or (check_existence(treatment_id_list, [2, 6, 10]) is True)):
+        SNV_type = 'SM'
+
+    elif (len(treatment_id_list) == 1) and (treatment_id_list[0] in [4, 8, 12]):
+        SNV_type = 'SC'
+
+    elif (len(treatment_id_list) > 1) and ((check_existence(treatment_id_list, [1, 5, 9]) is True) or (check_existence(treatment_id_list, [2, 6, 10]) is True)) and (check_existence(treatment_id_list, [4, 8, 12]) is False):
+        SNV_type = 'PM'
+
+    elif (len(treatment_id_list) > 1) and (check_existence(treatment_id_list, [1, 5, 9, 2, 6, 10]) is False) and (check_existence(treatment_id_list, [4, 8, 12]) is True):
+        SNV_type = 'PC'
+
+    elif (len(treatment_id_list) > 1) and ((check_existence(treatment_id_list, [1, 5, 9]) is True) or (check_existence(treatment_id_list, [2, 6, 10]) is True)) and (check_existence(treatment_id_list, [4, 8, 12]) is True):
+        SNV_type = 'PMC'
+
+    return SNV_type
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-SNV_matrix_cdc', required=True, help='SNV_matrix_cdc file')
 parser.add_argument('-fasta', required=False, help='fasta file')
@@ -290,7 +334,7 @@ for each_gene_aa in SeqIO.parse(combined_ref_faa, 'fasta'):
 output_seq_aa_handle.close()
 
 
-################################################### combine function ###################################################
+########################################## read function annotation into dict ##########################################
 
 # store annotation results in dicts
 gene_KO_id_dict = {}
@@ -315,7 +359,74 @@ for each_snv3 in open(annotation_file):
     gene_COG_function_dict[gene_id] = COG_function
 
 
-# combine function to output
+############################################### combine mutation effect ################################################
+
+snv_effect_dict = {}
+for each_effect in open(effect_file):
+    each_effect_split = each_effect.strip().split('\t')
+    snv_id = each_effect_split[0]
+    effects = each_effect_split[1]
+    snv_effect_dict[snv_id] = effects
+
+
+output_summary_handle = open(output_summary, 'w')
+for each_snv4 in open(output_mutated_genes):
+    snv_id4 = each_snv4.strip().split('\t')[0]
+    gene_id4 = each_snv4.strip().split('\t')[3]
+    effect = ''
+    SNV_parallel = ''
+    if snv_id4 in snv_effect_dict:
+        effect = snv_effect_dict[snv_id4]
+        SNV_parallel = check_parallel(effect)
+    else:
+        effect = 'NA'
+        SNV_parallel = 'NA'
+
+    current_COG_id2 = ''
+    current_COG_cat2 = ''
+    current_COG_function2 = ''
+    if gene_id4 in gene_COG_id_dict:
+        current_COG_id2 = gene_COG_id_dict[gene_id4]
+        current_COG_cat2 = gene_COG_cat_dict[gene_id4]
+        current_COG_function2 = gene_COG_function_dict[gene_id4]
+    else:
+        current_COG_id2 = 'NA'
+        current_COG_cat2 = 'NA'
+        current_COG_function2 = 'NA'
+
+    for_write2 = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv4.strip(), SNV_parallel, effect, current_COG_cat2, current_COG_id2, current_COG_function2)
+    output_summary_handle.write(for_write2)
+output_summary_handle.close()
+
+
+############################################ add parallel to mutated genes #############################################
+
+mutated_gene_effect_dict = {}
+
+for each_snv5 in open(output_summary):
+    each_snv5_split = each_snv5.strip().split('\t')
+    mutated_gene = each_snv5_split[3]
+    mutation_effect = each_snv5_split[7]
+    mutation_effect_list = []
+    if '|' in mutation_effect:
+        mutation_effect_list = mutation_effect.split('|')
+    else:
+        mutation_effect_list = [mutation_effect]
+
+    if mutated_gene not in mutated_gene_effect_dict:
+        mutated_gene_effect_dict[mutated_gene] = mutation_effect_list
+    else:
+        for each in mutation_effect_list:
+            if each not in mutated_gene_effect_dict[mutated_gene]:
+                mutated_gene_effect_dict[mutated_gene].append(each)
+
+mutated_gene_effect_dict_sorted = {}
+for each_key in mutated_gene_effect_dict:
+    new_value = '|'.join(sorted(mutated_gene_effect_dict[each_key]))
+    mutated_gene_effect_dict_sorted[each_key] = new_value
+
+
+# combine function and parallel to output
 output_mutated_genes_cate_fun_handle = open(output_mutated_genes_cate_fun, 'w')
 output_mutated_genes_cate_fun_handle.write('Gene\tMis\tNon\tSilen\tFD\tFS\tCOG_cate\tCOG_ID\tCOG_fun\n')
 for each_mutated_gene in open(output_mutated_genes_cate):
@@ -334,54 +445,17 @@ for each_mutated_gene in open(output_mutated_genes_cate):
             current_COG_cat = 'NA'
             current_COG_function = 'NA'
 
-        for_write_out = '%s\t%s\t%s\t%s\n' % (each_mutated_gene.strip(), current_COG_cat, current_COG_id, current_COG_function)
+        gene_mutation_parallel = check_parallel(mutated_gene_effect_dict_sorted[mutated_gene_id])
+
+        for_write_out = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_mutated_gene.strip(), gene_mutation_parallel, mutated_gene_effect_dict_sorted[mutated_gene_id], current_COG_cat, current_COG_id, current_COG_function)
         output_mutated_genes_cate_fun_handle.write(for_write_out)
 
 output_mutated_genes_cate_fun_handle.close()
-
-
-############################################### combine mutation effect ################################################
-
-snv_effect_dict = {}
-for each_effect in open(effect_file):
-    each_effect_split = each_effect.strip().split('\t')
-    snv_id = each_effect_split[0]
-    effects = each_effect_split[1]
-    snv_effect_dict[snv_id] = effects
-
-
-output_summary_handle = open(output_summary, 'w')
-for each_snv4 in open(output_mutated_genes):
-    snv_id4 = each_snv4.strip().split('\t')[0]
-    gene_id4 = each_snv4.strip().split('\t')[3]
-    effect = ''
-    if snv_id4 in snv_effect_dict:
-        effect = snv_effect_dict[snv_id4]
-    else:
-        effect = 'NA'
-
-    current_COG_id2 = ''
-    current_COG_cat2 = ''
-    current_COG_function2 = ''
-    if gene_id4 in gene_COG_id_dict:
-        current_COG_id2 = gene_COG_id_dict[gene_id4]
-        current_COG_cat2 = gene_COG_cat_dict[gene_id4]
-        current_COG_function2 = gene_COG_function_dict[gene_id4]
-    else:
-        current_COG_id2 = 'NA'
-        current_COG_cat2 = 'NA'
-        current_COG_function2 = 'NA'
-
-    for_write2 = '%s\t%s\t%s\t%s\t%s\n' % (each_snv4.strip(), effect, current_COG_cat2, current_COG_id2, current_COG_function2)
-    output_summary_handle.write(for_write2)
-output_summary_handle.close()
 
 
 ################################################### remove tmp file ####################################################
 
 os.system('rm %s' % output_mutated_genes_cate)
 os.system('rm %s' % output_mutated_genes)
-
 os.system('rm %s' % output_seq_nc)
 os.system('rm %s' % output_seq_aa)
-
