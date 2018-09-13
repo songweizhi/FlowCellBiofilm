@@ -2,8 +2,13 @@
 ## Scripts backup for Flow-cell biofilm project
 
 
-### 1. plot_sam_depth.py
+### Work flow
 
+
+
+
+
+### Plot_sam_depth.py
 
 Format of image title: (bam file)\_\_(contig id)\_\_(starting bp to plot)-(ending bp to plot)\_\_(average depth of k-mer)
 

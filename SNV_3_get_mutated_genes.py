@@ -121,7 +121,6 @@ combined_ref_faa = args['faa']
 
 annotation_file = 'combined_ref_aa.faa.COG.arCOG.kegg'
 #effect_file = 'SNV_QC_diff_depth_matrix_210_frequency_cdc_mutation_effect.txt'
-
 transl_table = 11
 
 
@@ -132,10 +131,7 @@ output_mutated_genes_cate = '%s_mutated_genes_category.txt' % SNV_matrix_cdc_bas
 output_mutated_genes_cate_fun = '%s_mutated_genes_cate_fun.txt' % SNV_matrix_cdc_basename
 
 output_summary = '%s_summary.txt' % SNV_matrix_cdc_basename
-
 effect_file = '%s_mutation_effect.txt' % SNV_matrix_cdc_basename
-
-
 
 output_seq_nc = '%s_mutated_genes_nc.fasta' % SNV_matrix_cdc_basename
 output_seq_aa = '%s_mutated_genes_aa.fasta' % SNV_matrix_cdc_basename
@@ -450,6 +446,9 @@ for each_mutated_gene in open(output_mutated_genes_cate):
         for_write_out = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_mutated_gene.strip(), gene_mutation_parallel, mutated_gene_effect_dict_sorted[mutated_gene_id], current_COG_cat, current_COG_id, current_COG_function)
         output_mutated_genes_cate_fun_handle.write(for_write_out)
 
+        if 'S' not in gene_mutation_parallel:
+            print(for_write_out.strip())
+
 output_mutated_genes_cate_fun_handle.close()
 
 
@@ -459,11 +458,3 @@ os.system('rm %s' % output_mutated_genes_cate)
 os.system('rm %s' % output_mutated_genes)
 os.system('rm %s' % output_seq_nc)
 os.system('rm %s' % output_seq_aa)
-
-
-
-
-
-
-
-
