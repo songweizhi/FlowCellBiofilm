@@ -11,7 +11,7 @@ def unique_list_elements(list_input):
 
 ##################################################### input files ######################################################
 
-# deepSNV output (no subsample: /srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_QC/output_f50000bp_1000mer_dl2000bp/SNV_combined.txt)
+# deepSNV output (nonsubsampled: /srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_QC/output_f50000bp_1000mer_dl2000bp/SNV_combined.txt)
 SNVs_no_subsample = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Effect_of_subsample/SNV_combined_nonsubsample.txt'
 
 
@@ -19,7 +19,7 @@ SNVs_no_subsample = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Effec
 SNVs_subsampled = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Effect_of_subsample/SNV_combined_subsample.txt'
 
 
-# get unsubsampled SNV list
+# get nonsubsampled SNV list
 SNV_list_no_subsample = []
 for each_SNV_1 in open(SNVs_no_subsample):
     each_SNV_1_split = each_SNV_1.strip().split(',')
@@ -39,7 +39,7 @@ for each_SNV_2 in open(SNVs_subsampled):
 SNVs_shared = sorted(set(SNV_list_no_subsample).intersection(SNV_list_subsampled))
 
 
-# get SNVs unique to unsubsampled
+# get SNVs unique to nonsubsampled
 SNVs_unique_to_unsubsampled = []
 for each_1 in SNV_list_no_subsample:
     if each_1 not in SNVs_shared:
