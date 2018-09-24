@@ -86,8 +86,11 @@ plot(SNV_simulated)
 invisible(dev.off())
 
 # get summary
+
+# Marwan
 # SNVs <- summary(SNV_simulated, sig.level=0.05, adjust.method="BH")
-SNVs <- summary(SNV_simulated)
+
+SNVs <- summary(SNV_simulated, sig.level=0.05, adjust.method="bonferroni")
 
 # write out
 write.table(SNVs, file = SNV_output_txt_file, row.names=FALSE, col.names = TRUE, sep = ',', quote = FALSE)

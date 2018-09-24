@@ -195,114 +195,81 @@ for each_snv in open(SNV_matrix_cdc):
         each_snv_pos_v = each_snv.strip().split('\t')[0].split('|')[3]
 
         # get all affected genes for
-        if ('-' in each_snv_pos) and (len(each_snv_pos_wt) > 1):
-            #print(each_snv.strip())
-            each_snv_pos_start = int(each_snv_pos.split('-')[0])
-            each_snv_pos_end = int(each_snv_pos.split('-')[1])
-            deleted_ncs = list(range(each_snv_pos_start, each_snv_pos_end + 1))
+        each_snv_pos = int(each_snv_pos)
 
-            # get the list of affected genes for continuous deletions
-            affected_gene_list = []
-            location_fragement_deletion = ''
-            for dnc in deleted_ncs:
-                for each_gene in ORF_ending_pos_dict:
-                    if (each_snv_seq == ORF_seq_id_dict[each_gene]) and (ORF_ending_pos_dict[each_gene][0] <= dnc <= ORF_ending_pos_dict[each_gene][1]):
-                        affected_gene_list.append(each_gene)
-
-            # uniq the list of affected genes
-            affected_gene_list_uniq = []
-            for each_affected_gene in affected_gene_list:
-                if each_affected_gene not in affected_gene_list_uniq:
-                    affected_gene_list_uniq.append(each_affected_gene)
-
-            # get the location of deleted fragement, Intergenic or Coding
-            if len(affected_gene_list_uniq) == 0:
-                location_fragement_deletion = 'Intergenic'
-            else:
-                location_fragement_deletion = 'Coding'
-
-            if location_fragement_deletion == 'Intergenic':
-                output_handle.write('%s\t%s\tNA\tNA\tNA\tNA\n' % (each_snv.strip().split('\t')[0], location_fragement_deletion))
-            elif location_fragement_deletion == 'Coding':
-                for each_affected_gene2 in affected_gene_list_uniq:
-                    output_handle.write('%s\t%s\t%s\t%s\tNA\tFragment_deletion\n' % (each_snv.strip().split('\t')[0], location_fragement_deletion, ORF_strand_dict[each_affected_gene2], each_affected_gene2))
-
+        # get SNV location
+        location = ''
+        if each_snv_pos in coding_region_dict[each_snv_seq]:
+            location = 'Coding'
         else:
-            each_snv_pos = int(each_snv_pos)
+            location = 'Intergenic'
+            #print('%s\t%s' % (each_snv.strip().split('\t')[0], location))
+            output_handle.write('%s\t%s\tNA\tNA\tNA\tNA\n' % (each_snv.strip().split('\t')[0], location))
 
-            # get SNV location
-            location = ''
-            if each_snv_pos in coding_region_dict[each_snv_seq]:
-                location = 'Coding'
-            else:
-                location = 'Intergenic'
-                #print('%s\t%s' % (each_snv.strip().split('\t')[0], location))
-                output_handle.write('%s\t%s\tNA\tNA\tNA\tNA\n' % (each_snv.strip().split('\t')[0], location))
+        # get mutation type
+        if location == 'Coding':
+            for each_gene in ORF_ending_pos_dict:
+                if (each_snv_seq == ORF_seq_id_dict[each_gene]) and (ORF_ending_pos_dict[each_gene][0] <= each_snv_pos <= ORF_ending_pos_dict[each_gene][1]):
 
-            # get mutation type
-            if location == 'Coding':
-                for each_gene in ORF_ending_pos_dict:
-                    if (each_snv_seq == ORF_seq_id_dict[each_gene]) and (ORF_ending_pos_dict[each_gene][0] <= each_snv_pos <= ORF_ending_pos_dict[each_gene][1]):
+                    start_pos_raw = ORF_ending_pos_dict[each_gene][0]
+                    end_pos_raw = ORF_ending_pos_dict[each_gene][1]
+                    snv_pos_raw = each_snv_pos
+                    start_pos_rescaled = ORF_ending_pos_dict[each_gene][0] - (ORF_ending_pos_dict[each_gene][0] - 1)
+                    end_pos_rescaled = ORF_ending_pos_dict[each_gene][1] - (ORF_ending_pos_dict[each_gene][0] - 1)
+                    snv_pos_rescaled = each_snv_pos - (ORF_ending_pos_dict[each_gene][0] - 1)
+                    mutation_type = ''
 
-                        start_pos_raw = ORF_ending_pos_dict[each_gene][0]
-                        end_pos_raw = ORF_ending_pos_dict[each_gene][1]
-                        snv_pos_raw = each_snv_pos
-                        start_pos_rescaled = ORF_ending_pos_dict[each_gene][0] - (ORF_ending_pos_dict[each_gene][0] - 1)
-                        end_pos_rescaled = ORF_ending_pos_dict[each_gene][1] - (ORF_ending_pos_dict[each_gene][0] - 1)
-                        snv_pos_rescaled = each_snv_pos - (ORF_ending_pos_dict[each_gene][0] - 1)
-                        mutation_type = ''
+                    if each_snv_pos_v == '-':
+                        mutation_type = 'Frameshift'
+                        output_handle.write('%s\t%s\t%s\t%s\tNA\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, mutation_type))
 
-                        if each_snv_pos_v == '-':
-                            mutation_type = 'Frameshift'
-                            output_handle.write('%s\t%s\t%s\t%s\tNA\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, mutation_type))
+                    elif each_snv_pos_v in ['A', 'T', 'C', 'G']:
 
-                        elif each_snv_pos_v in ['A', 'T', 'C', 'G']:
+                        # get all reading frame
+                        rf_pos_list = get_rf_pos_list(snv_pos_rescaled)
 
-                            # get all reading frame
-                            rf_pos_list = get_rf_pos_list(snv_pos_rescaled)
+                        # get the mutated reading frame with rescaled position
+                        mutated_rf_rescaled = []
+                        for each_rf in rf_pos_list:
+                            if snv_pos_rescaled in each_rf:
+                                mutated_rf_rescaled = each_rf
 
-                            # get the mutated reading frame with rescaled position
-                            mutated_rf_rescaled = []
-                            for each_rf in rf_pos_list:
-                                if snv_pos_rescaled in each_rf:
-                                    mutated_rf_rescaled = each_rf
+                        # get the mutated reading frame with raw position
+                        mutated_rf_raw = []
+                        for each_rescaled_pos in mutated_rf_rescaled:
+                            raw_pos = each_rescaled_pos + ORF_ending_pos_dict[each_gene][0] - 1
+                            mutated_rf_raw.append(raw_pos)
 
-                            # get the mutated reading frame with raw position
-                            mutated_rf_raw = []
-                            for each_rescaled_pos in mutated_rf_rescaled:
-                                raw_pos = each_rescaled_pos + ORF_ending_pos_dict[each_gene][0] - 1
-                                mutated_rf_raw.append(raw_pos)
-
-                            # get sequence of raw and mutated reading frame
-                            rf_seq_raw = ref_seq_dict[each_snv_seq][(mutated_rf_raw[0] - 1):(mutated_rf_raw[0] + 2)]
-                            rf_seq_mutated = ''
-                            for each_bp in mutated_rf_raw:
-                                current_bp = ''
-                                if each_bp == each_snv_pos:
-                                    current_bp = each_snv_pos_v
-                                else:
-                                    current_bp = ref_seq_dict[each_snv_seq][each_bp - 1]
-                                rf_seq_mutated += current_bp
-
-                            if ORF_strand_dict[each_gene] == '-':
-                                rf_seq_raw = str(Seq(rf_seq_raw, generic_dna).reverse_complement())
-                                rf_seq_mutated = str(Seq(rf_seq_mutated, generic_dna).reverse_complement())
-
-                            rf_seq_raw_aa = str(SeqRecord(Seq(rf_seq_raw)).seq.translate(table=transl_table))
-                            rf_seq_mutated_aa = str(SeqRecord(Seq(rf_seq_mutated)).seq.translate(table=transl_table))
-
-                            mutation_type_term = ''
-                            if rf_seq_raw_aa == rf_seq_mutated_aa:
-                                mutation_type_term = 'Silent'
-                            elif rf_seq_mutated_aa == '*':
-                                mutation_type_term = 'Nonsense'
+                        # get sequence of raw and mutated reading frame
+                        rf_seq_raw = ref_seq_dict[each_snv_seq][(mutated_rf_raw[0] - 1):(mutated_rf_raw[0] + 2)]
+                        rf_seq_mutated = ''
+                        for each_bp in mutated_rf_raw:
+                            current_bp = ''
+                            if each_bp == each_snv_pos:
+                                current_bp = each_snv_pos_v
                             else:
-                                mutation_type_term = 'Missense'
-                            aa_mutation = '%s(%s)->%s(%s)' % (rf_seq_raw, rf_seq_raw_aa, rf_seq_mutated, rf_seq_mutated_aa)
+                                current_bp = ref_seq_dict[each_snv_seq][each_bp - 1]
+                            rf_seq_mutated += current_bp
 
-                            # print out
-                            for_write = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, aa_mutation, mutation_type_term)
-                            output_handle.write(for_write)
+                        if ORF_strand_dict[each_gene] == '-':
+                            rf_seq_raw = str(Seq(rf_seq_raw, generic_dna).reverse_complement())
+                            rf_seq_mutated = str(Seq(rf_seq_mutated, generic_dna).reverse_complement())
+
+                        rf_seq_raw_aa = str(SeqRecord(Seq(rf_seq_raw)).seq.translate(table=transl_table))
+                        rf_seq_mutated_aa = str(SeqRecord(Seq(rf_seq_mutated)).seq.translate(table=transl_table))
+
+                        mutation_type_term = ''
+                        if rf_seq_raw_aa == rf_seq_mutated_aa:
+                            mutation_type_term = 'Silent'
+                        elif rf_seq_mutated_aa == '*':
+                            mutation_type_term = 'Nonsense'
+                        else:
+                            mutation_type_term = 'Missense'
+                        aa_mutation = '%s(%s)->%s(%s)' % (rf_seq_raw, rf_seq_raw_aa, rf_seq_mutated, rf_seq_mutated_aa)
+
+                        # print out
+                        for_write = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, aa_mutation, mutation_type_term)
+                        output_handle.write(for_write)
 output_handle.close()
 
 
@@ -333,23 +300,15 @@ output_seq_aa_handle.close()
 ########################################## read function annotation into dict ##########################################
 
 # store annotation results in dicts
-gene_KO_id_dict = {}
-gene_KO_function_dict = {}
 gene_COG_cat_dict = {}
 gene_COG_id_dict = {}
 gene_COG_function_dict = {}
 for each_snv3 in open(annotation_file):
     each_snv3_split = each_snv3.strip().split('\t')
     gene_id = each_snv3_split[0]
-    KO_id = each_snv3_split[6]
-    if KO_id == 'No_KO':
-        KO_id = 'NA'
-    KO_function = each_snv3_split[7]
     COG_cat = each_snv3_split[10]
     COG_id = each_snv3_split[8]
     COG_function = each_snv3_split[9]
-    gene_KO_id_dict[gene_id] = KO_id
-    gene_KO_function_dict[gene_id] = KO_function
     gene_COG_cat_dict[gene_id] = COG_cat
     gene_COG_id_dict[gene_id] = COG_id
     gene_COG_function_dict[gene_id] = COG_function
@@ -357,99 +316,24 @@ for each_snv3 in open(annotation_file):
 
 ############################################### combine mutation effect ################################################
 
-snv_effect_dict = {}
-for each_effect in open(effect_file):
-    each_effect_split = each_effect.strip().split('\t')
-    snv_id = each_effect_split[0]
-    effects = each_effect_split[1]
-    snv_effect_dict[snv_id] = effects
-
 
 output_summary_handle = open(output_summary, 'w')
 for each_snv4 in open(output_mutated_genes):
     snv_id4 = each_snv4.strip().split('\t')[0]
     gene_id4 = each_snv4.strip().split('\t')[3]
-    effect = ''
-    SNV_parallel = ''
-    if snv_id4 in snv_effect_dict:
-        effect = snv_effect_dict[snv_id4]
-        SNV_parallel = check_parallel(effect)
-    else:
-        effect = 'NA'
-        SNV_parallel = 'NA'
 
     current_COG_id2 = ''
-    current_COG_cat2 = ''
     current_COG_function2 = ''
     if gene_id4 in gene_COG_id_dict:
         current_COG_id2 = gene_COG_id_dict[gene_id4]
-        current_COG_cat2 = gene_COG_cat_dict[gene_id4]
         current_COG_function2 = gene_COG_function_dict[gene_id4]
     else:
         current_COG_id2 = 'NA'
-        current_COG_cat2 = 'NA'
         current_COG_function2 = 'NA'
 
-    for_write2 = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv4.strip(), SNV_parallel, effect, current_COG_cat2, current_COG_id2, current_COG_function2)
+    for_write2 = '%s\t%s\t%s\n' % (each_snv4.strip(), current_COG_id2, current_COG_function2)
     output_summary_handle.write(for_write2)
 output_summary_handle.close()
-
-
-############################################ add parallel to mutated genes #############################################
-
-mutated_gene_effect_dict = {}
-
-for each_snv5 in open(output_summary):
-    each_snv5_split = each_snv5.strip().split('\t')
-    mutated_gene = each_snv5_split[3]
-    mutation_effect = each_snv5_split[7]
-    mutation_effect_list = []
-    if '|' in mutation_effect:
-        mutation_effect_list = mutation_effect.split('|')
-    else:
-        mutation_effect_list = [mutation_effect]
-
-    if mutated_gene not in mutated_gene_effect_dict:
-        mutated_gene_effect_dict[mutated_gene] = mutation_effect_list
-    else:
-        for each in mutation_effect_list:
-            if each not in mutated_gene_effect_dict[mutated_gene]:
-                mutated_gene_effect_dict[mutated_gene].append(each)
-
-mutated_gene_effect_dict_sorted = {}
-for each_key in mutated_gene_effect_dict:
-    new_value = '|'.join(sorted(mutated_gene_effect_dict[each_key]))
-    mutated_gene_effect_dict_sorted[each_key] = new_value
-
-
-# combine function and parallel to output
-output_mutated_genes_cate_fun_handle = open(output_mutated_genes_cate_fun, 'w')
-output_mutated_genes_cate_fun_handle.write('Gene\tMis\tNon\tSilen\tFD\tFS\tCOG_cate\tCOG_ID\tCOG_fun\n')
-for each_mutated_gene in open(output_mutated_genes_cate):
-    if not each_mutated_gene.startswith('Gene'):
-        mutated_gene_id = each_mutated_gene.strip().split()[0]
-
-        current_COG_id = ''
-        current_COG_cat = ''
-        current_COG_function = ''
-        if mutated_gene_id in gene_COG_id_dict:
-            current_COG_id = gene_COG_id_dict[mutated_gene_id]
-            current_COG_cat = gene_COG_cat_dict[mutated_gene_id]
-            current_COG_function = gene_COG_function_dict[mutated_gene_id]
-        else:
-            current_COG_id = 'NA'
-            current_COG_cat = 'NA'
-            current_COG_function = 'NA'
-
-        gene_mutation_parallel = check_parallel(mutated_gene_effect_dict_sorted[mutated_gene_id])
-
-        for_write_out = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_mutated_gene.strip(), gene_mutation_parallel, mutated_gene_effect_dict_sorted[mutated_gene_id], current_COG_cat, current_COG_id, current_COG_function)
-        output_mutated_genes_cate_fun_handle.write(for_write_out)
-
-        if 'S' not in gene_mutation_parallel:
-            print(for_write_out.strip())
-
-output_mutated_genes_cate_fun_handle.close()
 
 
 ################################################### remove tmp file ####################################################
@@ -458,3 +342,4 @@ os.system('rm %s' % output_mutated_genes_cate)
 os.system('rm %s' % output_mutated_genes)
 os.system('rm %s' % output_seq_nc)
 os.system('rm %s' % output_seq_aa)
+
