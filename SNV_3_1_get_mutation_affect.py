@@ -162,6 +162,7 @@ def get_mutation_effect(SNV_matrix_cdc, plot_effect):
 # specify wd and input files
 wd = '/Users/songweizhi/Desktop/000'
 deepSNV_op_cdc = 'SNV_QC_even_depth_matrix_210_frequency_cdc.txt'
+deepSNV_op_cdc = 'SNV_QC_even_depth_matrix_D2_frequency_cdc.txt'
 output_mutation_effect = 'SNV_mutation_effect.txt'
 mutation_affect_plot_folder = 'SNV_mutation_effect_plot'
 plot_mutation_effect = 1

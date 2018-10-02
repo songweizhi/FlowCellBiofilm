@@ -364,7 +364,6 @@ for each_effect in open(effect_file):
     effects = each_effect_split[1]
     snv_effect_dict[snv_id] = effects
 
-
 output_summary_handle = open(output_summary, 'w')
 for each_snv4 in open(output_mutated_genes):
     snv_id4 = each_snv4.strip().split('\t')[0]

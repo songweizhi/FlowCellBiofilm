@@ -32,18 +32,17 @@ def write_out(op_file, list):
 
 ##################################################### input files ######################################################
 
-# deepSNV output (nonsubsampled: /srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_QC/output_f50000bp_1000mer_dl2000bp/SNV_QC.txt)
-#SNVs_QC_nonsubsampled = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Effect_of_coculture/SNV_QC.txt'
-SNVs_QC_nonsubsampled = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/parse_SNV_QC_v2/Qualified_SNVs_even_flanking_depth.txt'
-#SNVs_QC_nonsubsampled = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/parse_SNV_QC_v2/Qualified_SNVs_diff_flanking_depth.txt'
+wd = '/Users/songweizhi/Desktop/all_in_all'
+SNVs_QC_even_depth = 'Qualified_SNVs_even_flanking_depth.txt'
 
+os.chdir(wd)
 
 mono_210_SNV_list = []
 co_210_SNV_list = []
 mono_D2_SNV_list = []
 co_D2_SNV_list = []
 total_SNV = 0
-for each_SNV in open(SNVs_QC_nonsubsampled):
+for each_SNV in open(SNVs_QC_even_depth):
     each_SNV_split = each_SNV.strip().split(',')
     treatment_id = each_SNV_split[0].split('D')[0]
     strain = each_SNV_split[1].split('_')[0]
@@ -103,14 +102,14 @@ print('Qualified D2 SNVs concurrent in both: %s (%s' % (len(SNV_D2_concurrence),
 
 
 # export SNVs to file
-output_file_path = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Monoculture_VS_Coculture'
+#output_file_path = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Monoculture_VS_Coculture'
 
-SNV_210_mono_uniq_file =   '%s/SNV_210_mono_uniq.txt'   % output_file_path
-SNV_210_co_uniq_file =     '%s/SNV_210_co_uniq.txt'     % output_file_path
-SNV_210_concurrence_file = '%s/SNV_210_concurrence.txt' % output_file_path
-SNV_D2_mono_uniq_file =    '%s/SNV_D2_mono_uniq.txt'    % output_file_path
-SNV_D2_co_uniq_file =      '%s/SNV_D2_co_uniq.txt'      % output_file_path
-SNV_D2_concurrence_file =  '%s/SNV_D2_concurrence.txt'  % output_file_path
+SNV_210_mono_uniq_file =   '%s/SNV_210_mono_uniq.txt' % wd
+SNV_210_co_uniq_file =     '%s/SNV_210_co_uniq.txt' % wd
+SNV_210_concurrence_file = '%s/SNV_210_concurrence.txt' % wd
+SNV_D2_mono_uniq_file =    '%s/SNV_D2_mono_uniq.txt' % wd
+SNV_D2_co_uniq_file =      '%s/SNV_D2_co_uniq.txt' % wd
+SNV_D2_concurrence_file =  '%s/SNV_D2_concurrence.txt' % wd
 
 
 # write out
@@ -132,11 +131,10 @@ get_mutated_genes_cmd_D2_co_uniq = 'python3 %s -fasta combined_ref.fasta -gff co
 get_mutated_genes_cmd_D2_concurrence = 'python3 %s -fasta combined_ref.fasta -gff combined_ref.gff -ffn combined_ref.ffn -faa combined_ref.faa -SNV_matrix_cdc %s' % (get_mutated_genes_script, SNV_D2_concurrence_file)
 print()
 
-os.chdir(output_file_path)
 
 
 # store annotation results in dicts
-annotation_file = 'combined_ref_aa.faa.COG.arCOG.kegg'
+annotation_file = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/high_depth_region/combined_ref_aa.faa.COG.arCOG.kegg'
 
 gene_COG_id_dict = {}
 gene_COG_function_dict = {}
@@ -151,105 +149,93 @@ for each_snv3 in open(annotation_file):
 
 
 
-# print('get_mutated_genes_cmd_210_mono_uniq')
-# os.system(get_mutated_genes_cmd_210_mono_uniq)
-# print('get_mutated_genes_cmd_210_co_uniq')
-# os.system(get_mutated_genes_cmd_210_co_uniq)
-# print('get_mutated_genes_cmd_210_concurrence')
-# os.system(get_mutated_genes_cmd_210_concurrence)
-# print('get_mutated_genes_cmd_D2_mono_uniq')
-# os.system(get_mutated_genes_cmd_D2_mono_uniq)
-# print('get_mutated_genes_cmd_D2_co_uniq')
-# os.system(get_mutated_genes_cmd_D2_co_uniq)
-# print('get_mutated_genes_cmd_D2_concurrence')
-# os.system(get_mutated_genes_cmd_D2_concurrence)
 
-all_affected_gene_list = []
-gene_occurence_dict = {}
-gene_occurence_count_dict = {}
-
-strain_list = ['210', 'D2']
-
-for each_gene in open('SNV_D2_co_uniq_summary.txt'):
-    gene_id = each_gene.split('\t')[3]
-    if gene_id != 'NA':
-
-        if gene_id not in all_affected_gene_list:
-            all_affected_gene_list.append(gene_id)
-
-        if gene_id not in gene_occurence_count_dict:
-            gene_occurence_count_dict[gene_id] = 1
-        else:
-            gene_occurence_count_dict[gene_id] += 1
-        if gene_id not in gene_occurence_dict:
-            gene_occurence_dict[gene_id] = ['co']
-
-for each_gene in open('SNV_D2_mono_uniq_summary.txt'):
-    gene_id = each_gene.split('\t')[3]
-    if gene_id != 'NA':
-
-        if gene_id not in all_affected_gene_list:
-            all_affected_gene_list.append(gene_id)
-
-        if gene_id not in gene_occurence_count_dict:
-            gene_occurence_count_dict[gene_id] = 1
-        else:
-            gene_occurence_count_dict[gene_id] += 1
-        if gene_id not in gene_occurence_dict:
-            gene_occurence_dict[gene_id] = ['mono']
-        else:
-            if 'mono' not in gene_occurence_dict[gene_id]:
-                gene_occurence_dict[gene_id].append('mono')
-
-for each_gene in open('SNV_D2_concurrence_summary.txt'):
-    gene_id = each_gene.split('\t')[3]
-    if gene_id != 'NA':
-
-        if gene_id not in all_affected_gene_list:
-            all_affected_gene_list.append(gene_id)
-
-        if gene_id not in gene_occurence_count_dict:
-            gene_occurence_count_dict[gene_id] = 1
-        else:
-            gene_occurence_count_dict[gene_id] += 1
-        if gene_id not in gene_occurence_dict:
-            gene_occurence_dict[gene_id] = ['both']
-        else:
-            if 'both' not in gene_occurence_dict[gene_id]:
-                gene_occurence_dict[gene_id].append('both')
-
-
-for each_affected_gene in all_affected_gene_list:
-
-    existence = ''
-    existence_profile = gene_occurence_dict[each_affected_gene]
-    #print(existence_profile)
-    if len(existence_profile) == 1:
-        if existence_profile == ['mono']:
-            existence = 'mono'
-        elif existence_profile == ['co']:
-            existence = 'co'
-        elif existence_profile == ['both']:
-            existence = 'both'
-    elif len(existence_profile) > 1:
-        existence = 'both'
-
-    current_COG_id2 = ''
-    current_COG_function2 = ''
-    if each_affected_gene in gene_COG_id_dict:
-        current_COG_id2 = gene_COG_id_dict[each_affected_gene]
-        current_COG_function2 = gene_COG_function_dict[each_affected_gene]
-    else:
-        current_COG_id2 = 'NA'
-        current_COG_function2 = 'NA'
-
-    for_report = '%s\t%s\t%s\t%s\t%s' % (each_affected_gene, existence, gene_occurence_count_dict[each_affected_gene], current_COG_id2, current_COG_function2)
-
-    print(for_report)
-
-
-
-
+#
+# all_affected_gene_list = []
+# gene_occurence_dict = {}
+# gene_occurence_count_dict = {}
+#
+# strain = 'D2'
+# for each_gene in open('SNV_%s_co_uniq_summary.txt' % strain):
+#     gene_id = each_gene.split('\t')[3]
+#     if gene_id != 'NA':
+#
+#         if gene_id not in all_affected_gene_list:
+#             all_affected_gene_list.append(gene_id)
+#
+#         if gene_id not in gene_occurence_count_dict:
+#             gene_occurence_count_dict[gene_id] = 1
+#         else:
+#             gene_occurence_count_dict[gene_id] += 1
+#         if gene_id not in gene_occurence_dict:
+#             gene_occurence_dict[gene_id] = ['co']
+#
+# for each_gene in open('SNV_%s_mono_uniq_summary.txt' % strain):
+#     gene_id = each_gene.split('\t')[3]
+#     if gene_id != 'NA':
+#
+#         if gene_id not in all_affected_gene_list:
+#             all_affected_gene_list.append(gene_id)
+#
+#         if gene_id not in gene_occurence_count_dict:
+#             gene_occurence_count_dict[gene_id] = 1
+#         else:
+#             gene_occurence_count_dict[gene_id] += 1
+#         if gene_id not in gene_occurence_dict:
+#             gene_occurence_dict[gene_id] = ['mono']
+#         else:
+#             if 'mono' not in gene_occurence_dict[gene_id]:
+#                 gene_occurence_dict[gene_id].append('mono')
+#
+# for each_gene in open('SNV_%s_concurrence_summary.txt' % strain):
+#     gene_id = each_gene.split('\t')[3]
+#     if gene_id != 'NA':
+#
+#         if gene_id not in all_affected_gene_list:
+#             all_affected_gene_list.append(gene_id)
+#
+#         if gene_id not in gene_occurence_count_dict:
+#             gene_occurence_count_dict[gene_id] = 1
+#         else:
+#             gene_occurence_count_dict[gene_id] += 1
+#         if gene_id not in gene_occurence_dict:
+#             gene_occurence_dict[gene_id] = ['both']
+#         else:
+#             if 'both' not in gene_occurence_dict[gene_id]:
+#                 gene_occurence_dict[gene_id].append('both')
+#
+#
+# for each_affected_gene in all_affected_gene_list:
+#
+#     existence = ''
+#     existence_profile = gene_occurence_dict[each_affected_gene]
+#     #print(existence_profile)
+#     if len(existence_profile) == 1:
+#         if existence_profile == ['mono']:
+#             existence = 'mono'
+#         elif existence_profile == ['co']:
+#             existence = 'co'
+#         elif existence_profile == ['both']:
+#             existence = 'both'
+#     elif len(existence_profile) > 1:
+#         existence = 'both'
+#
+#     current_COG_id2 = ''
+#     current_COG_function2 = ''
+#     if each_affected_gene in gene_COG_id_dict:
+#         current_COG_id2 = gene_COG_id_dict[each_affected_gene]
+#         current_COG_function2 = gene_COG_function_dict[each_affected_gene]
+#     else:
+#         current_COG_id2 = 'NA'
+#         current_COG_function2 = 'NA'
+#
+#     for_report = '%s\t%s\t%s\t%s\t%s' % (each_affected_gene, existence, gene_occurence_count_dict[each_affected_gene], current_COG_id2, current_COG_function2)
+#
+#     print(for_report)
+#
+#
+#
+#
 
 
 

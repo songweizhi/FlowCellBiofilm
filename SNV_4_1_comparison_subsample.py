@@ -14,7 +14,6 @@ def unique_list_elements(list_input):
 # deepSNV output (nonsubsampled: /srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_QC/output_f50000bp_1000mer_dl2000bp/SNV_combined.txt)
 SNVs_no_subsample = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Effect_of_subsample/SNV_combined_nonsubsample.txt'
 
-
 # deepSNV output (subsampled: /srv/scratch/z5039045/Flow_cell_biofilm/4_2_SNV_QC_subsampled/output_f50000bp_1000mer_dl2000bp/SNV_combined.txt)
 SNVs_subsampled = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Effect_of_subsample/SNV_combined_subsample.txt'
 
