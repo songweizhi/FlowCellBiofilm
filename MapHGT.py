@@ -46,6 +46,32 @@ def cigar_splitter(cigar):
     return cigar_splitted
 
 
+def get_cigar_seg_seq(cigar, cigar_seg, sequence):
+
+    # get length and type of provided cigar segment
+    cigar_seg_len = int(cigar_seg[:-1])
+    cigar_seg_type = cigar_seg[-1]
+
+    # split cigar at provided segment
+    cigar_split_M = cigar.split('%s%s' % (cigar_seg_len, cigar_seg_type))
+
+    # get left side length of provided segment
+    left_len = 0
+    if cigar_split_M[0] == '':
+        left_len = 0
+    else:
+        left_split = cigar_splitter(cigar_split_M[0])
+        for each in left_split:
+            each_len = int(each[:-1])
+            left_len += each_len
+
+    # get sequence
+    longest_M_seq = sequence[left_len: left_len + cigar_seg_len]
+
+    # return sequence
+    return longest_M_seq
+
+
 def export_dna_record(gene_seq, gene_id, gene_description, output_handle):
 
     seq_object = Seq(gene_seq, IUPAC.unambiguous_dna)
@@ -109,6 +135,7 @@ for each in open(sam_in):
                 output_reads_file_handle.write('%s\n' % reads_seq)
             else:
                 cigar_splitted = cigar_splitter(cigar)
+
                 # get longest M
                 current_M = 0
                 for each in cigar_splitted:
@@ -201,5 +228,3 @@ for each_ref in refseq_id_list:
     plt.savefig(pwd_image_file, dpi=300)
     plt.close()
 
-    # print(break_points_uniq)
-    # print(break_points_uniq_count)

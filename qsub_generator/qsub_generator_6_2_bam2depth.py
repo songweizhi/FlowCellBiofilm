@@ -11,13 +11,14 @@ walltime_needed = '11:59:00'
 email = 'wythe1987@163.com'
 modules_needed = ['samtools/1.7']
 
-wd = '/Users/songweizhi/Dropbox/Research/Flow_cell'
+wd = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets'
+#wd = '/Users/songweizhi/Desktop'
 
 #outputs_folder = 'qsub_bam2depth'
-outputs_folder = 'qsub_bam2depth_subsampled'
+outputs_folder = 'qsub_bam2depth_subsampled_446'
 
 #wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign'
-wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign_subsampled'
+wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign_subsampled_446'
 
 ###########################################################################################
 
@@ -47,7 +48,7 @@ for module in modules_needed:
 
 
 ################################################################
-sample_prefix_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/bam2depth_subsampled_sample_id.txt'
+sample_prefix_file = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/bam2depth_subsampled_sample_id.txt'
 
 for each in open(sample_prefix_file):
     each = each.strip()

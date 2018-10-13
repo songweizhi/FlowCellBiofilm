@@ -11,9 +11,9 @@ walltime_needed = '11:59:00'
 email = 'wythe1987@163.com'
 modules_needed = ['python/3.5.2', 'R/3.4.2']
 
-wd = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets'
-outputs_folder = 'qsub_deepSNV'
-wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_1_deepSNV'
+wd = '/Users/songweizhi/Desktop/'
+outputs_folder = 'qsub_deepSNV_subsampled_662'
+wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/4_1_deepSNV_subsampled_662'
 sample_prefix_file = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/sample_group.txt'
 
 ###########################################################################################
@@ -56,20 +56,19 @@ for sample in open(sample_prefix_file):
 
     deepSNV_cmd = ''
     if sample_group == 'mono_210':
-        deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/2.10wt_illumina.fasta -q ../3_novoalign/%s.bam -c ../3_novoalign/210WTD0.bam' % (sample_id)
+        deepSNV_cmd = 'python3 /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/2.10wt_illumina.fasta -q ../3_novoalign_subsampled_662/%s.bam -c ../3_novoalign_subsampled_662/210WTD0.bam' % (sample_id)
 
     if sample_group == 'mono_D2':
-        deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/D2_pacbio.fasta -q ../3_novoalign/%s.bam -c ../3_novoalign/D2D0.bam' % (sample_id)
+        deepSNV_cmd = 'python3 /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/D2_pacbio.fasta -q ../3_novoalign_subsampled_662/%s.bam -c ../3_novoalign_subsampled_662/D2D0.bam' % (sample_id)
 
     if sample_group == 'coculture':
-        deepSNV_cmd = 'python /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/combined_references.fasta -q ../3_novoalign/%s.bam -c ../3_novoalign/coculture_D0.bam' % (sample_id)
+        deepSNV_cmd = 'python3 /srv/scratch/z5039045/Scripts/deep_SNV_runner.py -r ../0_References/combined_references.fasta -q ../3_novoalign_subsampled_662/%s.bam -c ../3_novoalign_subsampled_662/coculture_D0.bam' % (sample_id)
 
-    print(deepSNV_cmd)
-    output_handle = open('%s/qsub_deepSNV_%s.sh' % (outputs_folder, sample_id), 'w')
+    # print(deepSNV_cmd)
+
+    output_handle = open('%s/qsub_deepSNV_subsampled_%s.sh' % (outputs_folder, sample_id), 'w')
     output_handle.write(header)
     output_handle.write(module_lines)
     output_handle.write('cd %s\n' % wd_on_katana)
     output_handle.write('%s\n' % deepSNV_cmd)
     output_handle.close()
-
-
