@@ -138,7 +138,9 @@ def plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, k_mer, bps_to_ma
     plt.yticks(fontsize=7)
 
     ymax = 0
-    if max(y) <= 5000:
+    if max(y) <= 2000:
+        ymax = 2000
+    elif (2000 < max(y) <= 5000):
         ymax = 5000
     elif (5000 < max(y) <= 10000):
         ymax = 10000

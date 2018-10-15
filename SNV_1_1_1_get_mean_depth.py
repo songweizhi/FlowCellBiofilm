@@ -3,9 +3,9 @@ import glob
 
 
 # define input
-depth_file_folder = '/Users/songweizhi/Desktop/depth_files_446'
+depth_file_folder = '/Users/songweizhi/Desktop/depth_files_662'
 depth_file_ext = 'depth'
-output_depth_summary = '/Users/songweizhi/Desktop/depth_summary_446.txt'
+output_depth_summary = '/Users/songweizhi/Desktop/depth_summary_662.txt'
 
 
 # get file list

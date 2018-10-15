@@ -7,6 +7,75 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
 
 
+def separate_continuous_deletion(file_in, file_out_cd, file_out_ncd):
+
+    # write out separately
+    file_out_cd_handle = open(file_out_cd, 'w')
+    file_out_ncd_handle = open(file_out_ncd, 'w')
+
+    current_sample_id = ''
+    current_seq = ''
+    current_pos = 0
+    current_line = ''
+    current_line_wrote = 0
+    for each_snv in open(file_in):
+        if not each_snv.startswith('sample'):
+
+            each_snv_sample_id = each_snv.strip().split(',')[0]
+            each_snv_seq = each_snv.strip().split(',')[1]
+            each_snv_pos = int(each_snv.strip().split(',')[2])
+            each_snv_var = each_snv.strip().split(',')[4]
+
+            # if not deletion, write out previous deletion (if have) and current SNV
+            if each_snv_var != '-':
+
+                if current_line == '':
+                    file_out_ncd_handle.write(each_snv)
+                elif current_line != '':
+                    if current_line_wrote == 0:
+                        file_out_ncd_handle.write(current_line)
+                    file_out_ncd_handle.write(each_snv)
+
+                # reset
+                current_sample_id = ''
+                current_seq = ''
+                current_pos = 0
+                current_line = ''
+                current_line_wrote = 0
+
+            # if it is a deletion
+            elif each_snv_var == '-':
+
+                if current_line == '':
+                    current_sample_id = each_snv_sample_id
+                    current_seq = each_snv_seq
+                    current_pos = each_snv_pos
+                    current_line = each_snv
+                    current_line_wrote = 0
+
+                elif current_line != '':
+                    if (each_snv_sample_id == current_sample_id) and (each_snv_seq == current_seq) and (each_snv_pos == current_pos + 1):
+                        if current_line_wrote == 0:
+                            file_out_cd_handle.write(current_line)
+                        file_out_cd_handle.write(each_snv)
+                        current_line = each_snv
+                        current_line_wrote = 1
+                        current_pos = each_snv_pos
+
+                    else:
+                        if current_line_wrote == 0:
+                            file_out_ncd_handle.write(current_line)
+
+                        current_sample_id = each_snv_sample_id
+                        current_seq = each_snv_seq
+                        current_pos = each_snv_pos
+                        current_line = each_snv
+                        current_line_wrote = 0
+
+    file_out_cd_handle.close()
+    file_out_ncd_handle.close()
+
+
 def unique_list_elements(list_input):
 
     list_output = []
@@ -120,16 +189,46 @@ combined_ref_faa = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/refere
 annotation_file = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/reference_files/combined_ref_aa.faa.COG.arCOG.kegg'
 transl_table = 11
 pwd_QC_txt = 'SNV_QC.txt'
+ending_len_cutoff = 50000
+exculding_regions = ''
 
 
-######################################################### Main #########################################################
+############################################## remove continuous deletion ##############################################
 
-qualified_SNVs_even_flanking_depth_file = 'SNV_QC_even_depth.txt'
-qualified_SNVs_diff_flanking_depth_file = 'SNV_QC_diff_depth.txt'
+# sort input QC file
+pwd_QC_txt_sorted =      'SNV_QC_sorted.txt'
+pwd_QC_txt_cd =          'SNV_QC_cd.txt'
+pwd_QC_txt_ncd =         'SNV_QC_ncd.txt'
+pwd_QC_txt_cd_combined = 'SNV_QC_cd_combined.txt'
+
+# sort QC file
+os.system('cat %s | sort > %s' % (pwd_QC_txt, pwd_QC_txt_sorted))
+
+# separate continuous deletion
+separate_continuous_deletion(pwd_QC_txt_sorted, pwd_QC_txt_cd, pwd_QC_txt_ncd)
+
+# combine continuous deletion
+#combine_continuous_deletion(pwd_QC_txt_cd, pwd_QC_txt_cd_combined)
+
+# delete tmp file
+os.system('rm %s' % pwd_QC_txt_sorted)
+
+
+##################################################### Parse SNV QC #####################################################
+
+# get reference length dict
+ref_len_dict = {}
+for each_ref in SeqIO.parse(combined_ref_fasta, 'fasta'):
+    ref_len_dict[each_ref.id] = len(each_ref.seq)
+print(ref_len_dict)
+
+qualified_SNVs_even_flanking_depth_file = 'SNV_QC_ncd_even_depth.txt'
+qualified_SNVs_diff_flanking_depth_file = 'SNV_QC_ncd_diff_depth.txt'
 
 qualified_SNVs_even_flanking_depth_file_handle = open(qualified_SNVs_even_flanking_depth_file, 'w')
 qualified_SNVs_diff_flanking_depth_file_handle = open(qualified_SNVs_diff_flanking_depth_file, 'w')
 
+SNV_at_endings = []
 n_tst_total_unqualified = []
 n_tst_each_unqualified = []
 strand_bias_unqualified = []
@@ -142,7 +241,7 @@ plot_prefix_diff = []
 plot_prefix_unqualified = []
 
 total_num = 0
-for each_snv in open(pwd_QC_txt):
+for each_snv in open(pwd_QC_txt_ncd):
 
     if not each_snv.startswith('sample'):
         each_snv_split = each_snv.strip().split(',')
@@ -163,42 +262,48 @@ for each_snv in open(pwd_QC_txt):
         each_snv_key_with_sample_id = '%s|%s|%s|%s|%s' % (each_snv_sample, each_snv_chr, each_snv_pos, each_snv_ref, each_snv_var)
         plot_prefix = '%s_%s_%s_%s_%s' % (each_snv_chr, each_snv_pos, each_snv_ref, each_snv_var, each_snv_sample)
 
-        # get SNVs with unqualified number of reads harbouring SNV
-        if each_snv_n_tst_b < min_var_reads_num:
-            n_tst_total_unqualified.append(each_snv_key_with_sample_id)
+        # get SNVs located at endings
+        if (each_snv_pos <= ending_len_cutoff) or (ref_len_dict[each_snv_chr] - each_snv_pos <= ending_len_cutoff):
+            #print(ref_len_dict[each_snv_chr] - each_snv_pos)
+            SNV_at_endings.append(plot_prefix)
 
-            if plot_prefix not in plot_prefix_unqualified:
-                plot_prefix_unqualified.append(plot_prefix)
+        else:
+            # get SNVs with unqualified number of reads harbouring SNV
+            if each_snv_n_tst_b < min_var_reads_num:
+                n_tst_total_unqualified.append(each_snv_key_with_sample_id)
 
-        # get SNVs with unqualified number of reads in each direction
-        if (each_snv_n_tst_fw < min_at_each_direction) or (each_snv_n_tst_bw < min_at_each_direction):
-            n_tst_each_unqualified.append(each_snv_key_with_sample_id)
+                if plot_prefix not in plot_prefix_unqualified:
+                    plot_prefix_unqualified.append(plot_prefix)
 
-            if plot_prefix not in plot_prefix_unqualified:
-                plot_prefix_unqualified.append(plot_prefix)
+            # get SNVs with unqualified number of reads in each direction
+            if (each_snv_n_tst_fw < min_at_each_direction) or (each_snv_n_tst_bw < min_at_each_direction):
+                n_tst_each_unqualified.append(each_snv_key_with_sample_id)
 
-        # get SNVs with unqualified strand bias
-        if each_snv_strand_bias > strand_bias_cutoff:
-            strand_bias_unqualified.append(each_snv_key_with_sample_id)
+                if plot_prefix not in plot_prefix_unqualified:
+                    plot_prefix_unqualified.append(plot_prefix)
 
-            if plot_prefix not in plot_prefix_unqualified:
-                plot_prefix_unqualified.append(plot_prefix)
+            # get SNVs with unqualified strand bias
+            if each_snv_strand_bias > strand_bias_cutoff:
+                strand_bias_unqualified.append(each_snv_key_with_sample_id)
 
-        # get SNVs with flanking depth difference higher than defined cutoff
-        if (each_snv_n_tst_b >= min_var_reads_num) and (not ((each_snv_n_tst_fw < min_at_each_direction) or (each_snv_n_tst_bw < min_at_each_direction))) and (each_snv_strand_bias <= strand_bias_cutoff):
-            qualified_SNVs.append(each_snv_key_with_sample_id)
+                if plot_prefix not in plot_prefix_unqualified:
+                    plot_prefix_unqualified.append(plot_prefix)
 
-        # get qualified SNV with similar flanking depth
-        if (each_snv_n_tst_b >= min_var_reads_num) and (each_snv_n_tst_fw >= min_at_each_direction) and (each_snv_n_tst_bw >= min_at_each_direction) and (each_snv_strand_bias <= strand_bias_cutoff) and (each_snv_mean_depth_diff <= depth_difference_cutoff):
-            qualified_SNVs_even_flanking_depth.append(each_snv_key_with_sample_id)
-            plot_prefix_even.append(plot_prefix)
-            qualified_SNVs_even_flanking_depth_file_handle.write(each_snv)
+            # get SNVs with flanking depth difference higher than defined cutoff
+            if (each_snv_n_tst_b >= min_var_reads_num) and (not ((each_snv_n_tst_fw < min_at_each_direction) or (each_snv_n_tst_bw < min_at_each_direction))) and (each_snv_strand_bias <= strand_bias_cutoff):
+                qualified_SNVs.append(each_snv_key_with_sample_id)
 
-        # get qualified SNV with different flanking depth
-        if (each_snv_n_tst_b >= min_var_reads_num) and (each_snv_n_tst_fw >= min_at_each_direction) and (each_snv_n_tst_bw >= min_at_each_direction) and (each_snv_strand_bias <= strand_bias_cutoff) and (each_snv_mean_depth_diff > depth_difference_cutoff):
-            qualified_SNVs_diff_flanking_depth.append(each_snv_key_with_sample_id)
-            plot_prefix_diff.append(plot_prefix)
-            qualified_SNVs_diff_flanking_depth_file_handle.write(each_snv)
+            # get qualified SNV with similar flanking depth
+            if (each_snv_n_tst_b >= min_var_reads_num) and (each_snv_n_tst_fw >= min_at_each_direction) and (each_snv_n_tst_bw >= min_at_each_direction) and (each_snv_strand_bias <= strand_bias_cutoff) and (each_snv_mean_depth_diff <= depth_difference_cutoff):
+                qualified_SNVs_even_flanking_depth.append(each_snv_key_with_sample_id)
+                plot_prefix_even.append(plot_prefix)
+                qualified_SNVs_even_flanking_depth_file_handle.write(each_snv)
+
+            # get qualified SNV with different flanking depth
+            if (each_snv_n_tst_b >= min_var_reads_num) and (each_snv_n_tst_fw >= min_at_each_direction) and (each_snv_n_tst_bw >= min_at_each_direction) and (each_snv_strand_bias <= strand_bias_cutoff) and (each_snv_mean_depth_diff > depth_difference_cutoff):
+                qualified_SNVs_diff_flanking_depth.append(each_snv_key_with_sample_id)
+                plot_prefix_diff.append(plot_prefix)
+                qualified_SNVs_diff_flanking_depth_file_handle.write(each_snv)
 
         total_num += 1
 
@@ -207,8 +312,9 @@ qualified_SNVs_diff_flanking_depth_file_handle.close()
 
 
 # For report
-print('\n############################## report ##############################')
+print('\n############################## report 1 ##############################')
 print('The total number of detected SNVs: %s' % total_num)
+print('The number of SNVs located at endings (within %sbp): %s' % (ending_len_cutoff, len(SNV_at_endings)))
 print('The number of SNVs with less than %s reads harboring it: %s' % (min_var_reads_num, len(n_tst_total_unqualified)))
 print('The number of SNVs with reads only from one direction: %s' % len(n_tst_each_unqualified))
 print('The number of SNVs with strand bias higher than %s: %s' % (strand_bias_cutoff, len(strand_bias_unqualified)))
@@ -225,37 +331,37 @@ print('Details exported to %s and %s.' % (qualified_SNVs_even_flanking_depth_fil
 if separate_plot == 1:
 
     pwd_plot_folder = 'SNV_depth_plot'
-    pwd_plot_folder_even = '%s_even_%s' % (pwd_plot_folder, depth_difference_cutoff)
-    pwd_plot_folder_diff = '%s_diff_%s' % (pwd_plot_folder, depth_difference_cutoff)
-    pwd_plot_folder_unqualified = '%s_unqualified_%s' % (pwd_plot_folder, depth_difference_cutoff)
+    pwd_plot_folder_sep = 'SNV_depth_plot_sep'
+    pwd_plot_folder_endings =       '%s/%s_endings_%sbp'   % (pwd_plot_folder_sep, pwd_plot_folder, ending_len_cutoff)
+    pwd_plot_folder_even =          '%s/%s_even_%s'        % (pwd_plot_folder_sep, pwd_plot_folder, depth_difference_cutoff)
+    pwd_plot_folder_diff =          '%s/%s_diff_%s'        % (pwd_plot_folder_sep, pwd_plot_folder, depth_difference_cutoff)
+    pwd_plot_folder_unqualified =   '%s/%s_unqualified'    % (pwd_plot_folder_sep, pwd_plot_folder)
 
     # prepare folder
-    if os.path.isdir(pwd_plot_folder_even):
-        shutil.rmtree(pwd_plot_folder_even)
-        os.mkdir(pwd_plot_folder_even)
+    if os.path.isdir(pwd_plot_folder_sep):
+        shutil.rmtree(pwd_plot_folder_sep)
+        if os.path.isdir(pwd_plot_folder_sep):
+            shutil.rmtree(pwd_plot_folder_sep)
+        os.mkdir(pwd_plot_folder_sep)
     else:
-        os.mkdir(pwd_plot_folder_even)
+        os.mkdir(pwd_plot_folder_sep)
 
-    if os.path.isdir(pwd_plot_folder_diff):
-        shutil.rmtree(pwd_plot_folder_diff)
-        os.mkdir(pwd_plot_folder_diff)
-    else:
-        os.mkdir(pwd_plot_folder_diff)
+    for folder in [pwd_plot_folder_endings, pwd_plot_folder_even, pwd_plot_folder_diff, pwd_plot_folder_unqualified]:
+        os.mkdir(folder)
 
-    if os.path.isdir(pwd_plot_folder_unqualified):
-        shutil.rmtree(pwd_plot_folder_unqualified)
-        os.mkdir(pwd_plot_folder_unqualified)
-    else:
-        os.mkdir(pwd_plot_folder_unqualified)
+    # get plots for SNV located at ending regions
+    for each_even in SNV_at_endings:
+        pwd_plot = '%s/%s*' % (pwd_plot_folder, each_even)
+        cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_endings)
+        os.system(cmd)
 
-
-    # get plots with similar flanking deoth
+    # get plots with similar flanking depth
     for each_even in plot_prefix_even:
         pwd_plot = '%s/%s*' % (pwd_plot_folder, each_even)
         cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_even)
         os.system(cmd)
 
-    # get plots with similar flanking deoth
+    # get plots with similar flanking depth
     for each_diff in plot_prefix_diff:
         pwd_plot = '%s/%s*' % (pwd_plot_folder, each_diff)
         cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_diff)
@@ -266,6 +372,12 @@ if separate_plot == 1:
         pwd_plot = '%s/%s*' % (pwd_plot_folder, each_unqualified)
         cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_unqualified)
         os.system(cmd)
+
+
+############################################# combine continuous deletion ##############################################
+
+#combine_continuous_deletion(qualified_SNVs_even_flanking_depth_file, qualified_SNVs_even_flanking_depth_file_cdc)
+#combine_continuous_deletion(qualified_SNVs_diff_flanking_depth_file, qualified_SNVs_diff_flanking_depth_file_cdc)
 
 
 ####################################### compare between Monoculture and Coculture ######################################
@@ -295,12 +407,17 @@ for each_SNV in open(qualified_SNVs_even_flanking_depth_file):
 
     total_SNV += 1
 
-
 # uniq list element
 mono_210_SNV_list = unique_list_elements(mono_210_SNV_list)
 co_210_SNV_list = unique_list_elements(co_210_SNV_list)
 mono_D2_SNV_list = unique_list_elements(mono_D2_SNV_list)
 co_D2_SNV_list = unique_list_elements(co_D2_SNV_list)
+
+
+print(mono_210_SNV_list)
+print(co_210_SNV_list)
+print(mono_D2_SNV_list)
+print(co_D2_SNV_list)
 
 # 210
 SNV_210_concurrence = set(mono_210_SNV_list).intersection(co_210_SNV_list)
@@ -318,8 +435,8 @@ total_D2 = len(SNV_D2_concurrence) + len(SNV_D2_mono_uniq) + len(SNV_D2_co_uniq)
 
 
 # For report
-print('\n############################## report ##############################')
-print('Qualified SNVs in total: %s' % total_SNV)
+print('\n############################## report 2 ##############################')
+print('Qualified SNVs (even depth) in total: %s' % total_SNV)
 print('Qualified 2.10 SNVs: %s' % total_210)
 print('Qualified D2 SNVs: %s' % total_D2)
 print()
@@ -335,12 +452,12 @@ print('Qualified D2 SNVs concurrent in both: %s (%s' % (len(SNV_D2_concurrence),
 # export SNVs to file
 #output_file_path = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Monoculture_VS_Coculture'
 
-SNV_210_mono_uniq_file =   'SNV_210_mono_uniq.txt'
-SNV_210_co_uniq_file =     'SNV_210_co_uniq.txt'
-SNV_210_concurrence_file = 'SNV_210_concurrence.txt'
-SNV_D2_mono_uniq_file =    'SNV_D2_mono_uniq.txt'
-SNV_D2_co_uniq_file =      'SNV_D2_co_uniq.txt'
-SNV_D2_concurrence_file =  'SNV_D2_concurrence.txt'
+SNV_210_mono_uniq_file =   'SNV_ncd_210_mono_uniq.txt'
+SNV_210_co_uniq_file =     'SNV_ncd_210_co_uniq.txt'
+SNV_210_concurrence_file = 'SNV_ncd_210_concurrence.txt'
+SNV_D2_mono_uniq_file =    'SNV_ncd_D2_mono_uniq.txt'
+SNV_D2_co_uniq_file =      'SNV_ncd_D2_co_uniq.txt'
+SNV_D2_concurrence_file =  'SNV_ncd_D2_concurrence.txt'
 
 
 # write out
@@ -370,7 +487,7 @@ for each_snv3 in open(annotation_file):
 SNV_matrix_cdc_list = [SNV_210_mono_uniq_file, SNV_210_co_uniq_file, SNV_210_concurrence_file, SNV_D2_mono_uniq_file, SNV_D2_co_uniq_file, SNV_D2_concurrence_file]
 print(SNV_matrix_cdc_list)
 
-print('\n############################## report ##############################')
+print('\n############################## report 3 ##############################')
 
 for SNV_matrix_cdc in SNV_matrix_cdc_list:
     print(SNV_matrix_cdc)
@@ -583,7 +700,7 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
 
 ########################################################################################################################
 
-print('\n############################## report ##############################')
+print('\n############################## report 4 ##############################')
 strain_list = ['210', 'D2']
 for strain in strain_list:
 
@@ -595,7 +712,7 @@ for strain in strain_list:
     gene_occurence_dict = {}
     gene_occurence_count_dict = {}
 
-    for each_gene in open('SNV_%s_co_uniq_summary.txt' % strain):
+    for each_gene in open('SNV_ncd_%s_co_uniq_summary.txt' % strain):
         gene_id = each_gene.split('\t')[3]
         if gene_id != 'NA':
 
@@ -609,7 +726,7 @@ for strain in strain_list:
             if gene_id not in gene_occurence_dict:
                 gene_occurence_dict[gene_id] = ['co']
 
-    for each_gene in open('SNV_%s_mono_uniq_summary.txt' % strain):
+    for each_gene in open('SNV_ncd_%s_mono_uniq_summary.txt' % strain):
         gene_id = each_gene.split('\t')[3]
         if gene_id != 'NA':
 
@@ -626,7 +743,7 @@ for strain in strain_list:
                 if 'mono' not in gene_occurence_dict[gene_id]:
                     gene_occurence_dict[gene_id].append('mono')
 
-    for each_gene in open('SNV_%s_concurrence_summary.txt' % strain):
+    for each_gene in open('SNV_ncd_%s_concurrence_summary.txt' % strain):
         gene_id = each_gene.split('\t')[3]
         if gene_id != 'NA':
 
@@ -689,3 +806,5 @@ for strain in strain_list:
 
     output_mutated_genes_handle.close()
 
+
+############################################### get matrix from QC file ################################################

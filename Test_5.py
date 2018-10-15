@@ -2,55 +2,20 @@ import os
 import glob
 import shutil
 
-###################################### calculate average depth from bam depth file #####################################
-
-total_length_dict = {'1': 4090456, '5': 4090456, '9': 4090456, '2': 5020543, '6': 5020543, '10': 5020543, '4': 9110999, '8': 9110999, '12': 9110999, '210WT': 4090456, 'D2': 5020543, 'coculture_': 9110999}
-depth_file_folder = '/Users/songweizhi/Desktop/depth_file'
-depth_file_re = '%s/*.depth' % depth_file_folder
-depth_file_list = [os.path.basename(file_name) for file_name in glob.glob(depth_file_re)]
-
-
-############################################### get subsample percentage ###############################################
-
-depth_summary_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/subsample_wd/bam_depth.txt'
-
-depth_list = []
-depth_dict = {}
-for each_depth in open(depth_summary_file):
-    each_depth_split = each_depth.strip().split('\t')
-    depth_list.append(int(each_depth_split[1]))
-    depth_dict[each_depth_split[0]] = int(each_depth_split[1])
-
-min_depth = min(depth_list)
-
-subsample_percent_file = '/Users/songweizhi/Dropbox/Research/Flow_cell/subsample_wd/bam_depth_subsample_percent.txt'
-subsample_percent_file_handle = open(subsample_percent_file, 'w')
-subsample_percent_file_handle.write('Sample\tDepth\tPercent\tFinal_depth\n')
-subsample_percent_dict = {}
-for each_key in depth_dict:
-    percent = min_depth/depth_dict[each_key]
-    percent = float("{0:.2f}".format(percent))
-    subsample_percent_file_handle.write('%s\t%s\t%s\t%s\n' % (each_key, depth_dict[each_key], percent, min_depth))
-    subsample_percent_dict[each_key] = percent
-subsample_percent_file_handle.close()
-
-
-################################################### prepare qsub file ##################################################
-
-############ CONFIGURATION ############
+###################################### CONFIGURATION ######################################
 
 nodes_number = 1
 ppn_number = 1
-memory = 10
+memory = 60
 walltime_needed = '11:59:00'
 email = 'wythe1987@163.com'
-modules_needed = ['samtools/1.7']
+modules_needed = ['java/8u162 ']
 
 wd = '/Users/songweizhi/Desktop'
-outputs_folder = '  '
-wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign'
+outputs_folder = 'qsub_ANI'
+wd_on_katana = '/srv/scratch/z5039045/Cryobacterium/ANI_results'
 
-#######################################
+###########################################################################################
 
 os.chdir(wd)
 
@@ -76,17 +41,37 @@ module_lines = ''
 for module in modules_needed:
     module_lines += 'module load ' + module + '\n'
 
-#######################################
 
-for each_percent in subsample_percent_dict:
+################################################################
 
-    cmd = 'samtools view -s %s -b %s.bam > subsampled/%s.bam' % (subsample_percent_dict[each_percent], each_percent, each_percent)
+genome_id_file = '/Users/songweizhi/Desktop/all_genomes.txt'
+pwd_OAU_jar = '/srv/scratch/z5039045/Softwares/ANI_calculator/OAU.jar'
+pwd_usearch = '/srv/scratch/z5039045/Softwares/ANI_calculator/usearch'
 
-    output_handle = open('%s/qsub_subsample_%s.sh' % (outputs_folder, each_percent), 'w')
+
+for each_1 in open(genome_id_file):
+
+    output_handle = open('%s/qsub_ANI_%s.sh' % (outputs_folder, each_1.strip().split('.')[0]), 'w')
+
     output_handle.write(header)
     output_handle.write(module_lines)
     output_handle.write('cd %s\n' % wd_on_katana)
-    output_handle.write('%s\n' % cmd)
-    output_handle.write('cd subsampled\n')
-    output_handle.write('samtools index %s.bam\n' % each_percent)
+
+
+    for each_2 in open(genome_id_file):
+        output_handle.write('java -Xmx32G -jar %s -u %s -f1 ../genomes_all/%s -f2 ../genomes_all/%s > ANI_results_%s_%s.txt\n' % (pwd_OAU_jar,
+                                                                                                   pwd_usearch,
+                                                                                                   each_1.strip(),
+                                                                                                   each_2.strip(),
+                                                                                                   each_1.strip().split('.')[0],
+                                                                                                   each_2.strip().split('.')[0]))
+
+
     output_handle.close()
+
+
+
+
+
+
+

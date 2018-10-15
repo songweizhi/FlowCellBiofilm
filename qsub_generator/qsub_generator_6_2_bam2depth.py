@@ -15,10 +15,10 @@ wd = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets'
 #wd = '/Users/songweizhi/Desktop'
 
 #outputs_folder = 'qsub_bam2depth'
-outputs_folder = 'qsub_bam2depth_subsampled_446'
+outputs_folder = 'qsub_bam2depth_subsampled_662'
 
 #wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign'
-wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign_subsampled_446'
+wd_on_katana = '/srv/scratch/z5039045/Flow_cell_biofilm/3_novoalign_subsampled_662'
 
 ###########################################################################################
 
