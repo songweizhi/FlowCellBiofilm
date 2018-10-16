@@ -5,6 +5,29 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
+from datetime import datetime
+import numpy as np
+from scipy import stats
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
+
+def turn_element_to_str(list_in):
+
+    list_out = []
+    for each_element in list_in:
+        each_element_str = str(each_element)
+        list_out.append(each_element_str)
+
+    return list_out
+
+
+def merge_two_dict(dict_a, dict_b):
+    dict_c = dict_a.copy()
+    dict_c.update(dict_b)
+
+    return dict_c
 
 
 def separate_continuous_deletion(file_in, file_out_cd, file_out_ncd):
@@ -135,8 +158,8 @@ def get_mutation_cate_summary(file_in, file_out):
     mutation_cate_dict = {}
     for each_snv in open(file_in):
         each_snv_split = each_snv.strip().split('\t')
-        mutated_gene = each_snv_split[3]
-        mutation_cate = each_snv_split[5]
+        mutated_gene = each_snv_split[4]
+        mutation_cate = each_snv_split[6]
 
         if mutated_gene != 'NA':
             if mutated_gene not in mutation_cate_dict:
@@ -158,6 +181,264 @@ def get_mutation_cate_summary(file_in, file_out):
     file_out_handle.close()
 
     return mutation_cate_dict
+
+
+def get_matrix(SNV_file_in, SNV_file_out_frequency_210, SNV_file_out_frequency_D2):
+
+    uniq_snv_list = []
+    snv_freq_dict = {}
+    snv_occurrence_dict = {}
+    for snv in open(SNV_file_in):
+        if not snv.startswith('sample'):
+            snv_split = snv.strip().split(',')
+            snv_sample = snv_split[0]
+            snv_chr = snv_split[1]
+            snv_pos = int(snv_split[2])
+            snv_ref = snv_split[3]
+            snv_var = snv_split[4]
+            snv_freq = float(snv_split[6])
+
+            snv_key_no_sample_id = '%s|%s|%s|%s' % (snv_chr, snv_pos, snv_ref, snv_var)
+            snv_key_with_sample_id = '%s|%s|%s|%s|%s' % (snv_sample, snv_chr, snv_pos, snv_ref, snv_var)
+
+            # get snv_freq_dict
+            snv_freq_dict[snv_key_with_sample_id] = snv_freq
+
+            # get uniq_snv_list
+            if snv_key_no_sample_id not in uniq_snv_list:
+                uniq_snv_list.append(snv_key_no_sample_id)
+
+            # get snv_occurrence_dict
+            if snv_key_no_sample_id not in snv_occurrence_dict:
+                snv_occurrence_dict[snv_key_no_sample_id] = [snv_sample]
+            else:
+                snv_occurrence_dict[snv_key_no_sample_id].append(snv_sample)
+
+    # sort qualified_snv_uniq list
+    uniq_snv_list_sorted = sorted(uniq_snv_list)
+
+    # get SNV occurrence matrix for 2.10 and D2
+    SNV_file_out_frequency_210_handle = open(SNV_file_out_frequency_210, 'w')
+    SNV_file_out_frequency_D2_handle = open(SNV_file_out_frequency_D2, 'w')
+
+    SNV_file_out_frequency_210_handle.write('\t%s\n' % '\t'.join(matrix_header_210))
+    SNV_file_out_frequency_D2_handle.write('\t%s\n' % '\t'.join(matrix_header_D2))
+
+    # get matrix
+    for each_uniq_snv in uniq_snv_list_sorted:
+        # get matrix for 2.10
+        if each_uniq_snv.startswith('2.10'):
+            occurrence_list_existence_210 = []
+            occurrence_list_frequency_210 = []
+            for each_210_sample in matrix_header_210:
+                if each_210_sample in snv_occurrence_dict[each_uniq_snv]:
+                    occurrence_list_existence_210.append('1')
+                    occurrence_list_frequency_210.append(str(snv_freq_dict['%s|%s' % (each_210_sample, each_uniq_snv)]))
+                else:
+                    occurrence_list_existence_210.append('0')
+                    occurrence_list_frequency_210.append('0')
+
+            for_write_frequency_210 = '%s\t%s\n' % (each_uniq_snv, '\t'.join(occurrence_list_frequency_210))
+            SNV_file_out_frequency_210_handle.write(for_write_frequency_210)
+
+        # get matrix for D2
+        if each_uniq_snv.startswith('D2'):
+            occurrence_list_existence_D2 = []
+            occurrence_list_frequency_D2 = []
+            for each_D2_sample in matrix_header_D2:
+                if each_D2_sample in snv_occurrence_dict[each_uniq_snv]:
+                    occurrence_list_existence_D2.append('1')
+                    occurrence_list_frequency_D2.append(str(snv_freq_dict['%s|%s' % (each_D2_sample, each_uniq_snv)]))
+                else:
+                    occurrence_list_existence_D2.append('0')
+                    occurrence_list_frequency_D2.append('0')
+
+            for_write_frequency_D2 = '%s\t%s\n' % (each_uniq_snv, '\t'.join(occurrence_list_frequency_D2))
+            SNV_file_out_frequency_D2_handle.write(for_write_frequency_D2)
+
+    SNV_file_out_frequency_210_handle.close()
+    SNV_file_out_frequency_D2_handle.close()
+
+
+def check_occurrence(list_in):
+
+    current_occurrence = 0
+    for each in list_in:
+        if each != '0':
+            current_occurrence = 1
+
+    return current_occurrence
+
+
+def check_parallel(matrix_file):
+    parallel_dict = {}
+    for snv in open(matrix_file):
+
+        if not snv.startswith('\t'):
+            snv_split = snv.strip().split('\t')
+            snv_id = snv_split[0]
+            mono_A_occurrence = check_occurrence([snv_split[1], snv_split[2], snv_split[3], snv_split[4]])
+            mono_B_occurrence = check_occurrence([snv_split[5], snv_split[6], snv_split[7], snv_split[8]])
+            mono_C_occurrence = check_occurrence([snv_split[9], snv_split[10], snv_split[11], snv_split[12]])
+            co_A_occurrence =   check_occurrence([snv_split[13], snv_split[14], snv_split[15], snv_split[16]])
+            co_B_occurrence =   check_occurrence([snv_split[17], snv_split[18], snv_split[19], snv_split[20]])
+            co_C_occurrence =   check_occurrence([snv_split[21], snv_split[22], snv_split[23], snv_split[24]])
+
+            mono_occurrence = [mono_A_occurrence, mono_B_occurrence, mono_C_occurrence]
+            co_occurrence = [co_A_occurrence, co_B_occurrence, co_C_occurrence]
+
+            # get parallel profile
+            parallel_profile = 'NA'
+
+            if (mono_occurrence.count(1) >= 1) and (co_occurrence.count(1) >= 1):
+                parallel_profile = ('PMC(%s_%s)' % (''.join(turn_element_to_str(mono_occurrence)), ''.join(turn_element_to_str(co_occurrence))))
+
+            elif (mono_occurrence.count(1) > 1) and (co_occurrence.count(1) == 0):
+                parallel_profile = ('PM(%s_%s)' % (''.join(turn_element_to_str(mono_occurrence)), ''.join(turn_element_to_str(co_occurrence))))
+
+            elif (mono_occurrence.count(1) == 0) and (co_occurrence.count(1) > 1):
+                parallel_profile = ('PC(%s_%s)' % (''.join(turn_element_to_str(mono_occurrence)), ''.join(turn_element_to_str(co_occurrence))))
+
+            elif (mono_occurrence.count(1) == 1) and (co_occurrence.count(1) == 0):
+                parallel_profile = ('NPM(%s_%s)' % (''.join(turn_element_to_str(mono_occurrence)), ''.join(turn_element_to_str(co_occurrence))))
+
+            elif (mono_occurrence.count(1) == 0) and (co_occurrence.count(1) == 1):
+                parallel_profile = ('NPC(%s_%s)' % (''.join(turn_element_to_str(mono_occurrence)), ''.join(turn_element_to_str(co_occurrence))))
+
+            parallel_dict[snv_id] = parallel_profile
+
+    return parallel_dict
+
+
+def get_affect(frequency_list, plot_effect, plot_folder, plot_filename):
+    time_point = [9, 18, 27, 42]
+    time_point_rescaled = []
+    for each_tp in time_point:
+        each_tp_rescaled = each_tp / 42
+        time_point_rescaled.append(each_tp_rescaled)
+    time_point_rescaled_arrary = np.array(time_point_rescaled)
+
+    frequency_list_percentage = []
+    for each_p in frequency_list:
+        frequency_list_percentage.append(each_p*100)
+
+    frequency_arrary = np.array(frequency_list_percentage)
+    min_frequency = frequency_arrary.min()
+    max_frequency = frequency_arrary.max()
+    slope, intercept, r_value, p_value, std_err = stats.linregress(time_point_rescaled_arrary, frequency_arrary)
+
+    if frequency_arrary[-1] >= 25:
+        affect = 'Positive'
+    elif (slope > 0) and (max_frequency >= 10):
+        affect = 'Positive'
+    elif (slope < 0) and (max_frequency <= 10):
+        affect = 'Negative'
+    else:
+        affect = 'Neutral'
+
+    # plot
+    if plot_effect == 1:
+        plt.plot(time_point_rescaled_arrary, frequency_arrary, 'o')
+        plt.plot(time_point_rescaled_arrary, intercept + slope*time_point_rescaled_arrary, 'r')
+
+        # add text
+        y_min = plt.ylim()[0]  # get the y-axes minimum value
+        y_max = plt.ylim()[1]  # get the y-axes maximum value
+
+        # set text position
+        text_x = 0.2
+        text_y_slope = y_min + (y_max - y_min) / 5 * 4.4
+        text_y_p_value = y_min + (y_max - y_min) / 5 * 4.1
+        text_y_affect = y_min + (y_max - y_min) / 5 * 3.8
+        plt.text(text_x, text_y_slope, 'Slope: %s' % float("{0:.2f}".format(slope)))
+        plt.text(text_x, text_y_p_value, 'P_value: %s' % float("{0:.2f}".format(p_value)))
+        plt.text(text_x, text_y_affect, 'Affect: %s' % affect)
+
+        plt.xlabel('Time point')
+        plt.ylabel('Frequency (%)')
+        plt.savefig('%s/%s.png' % (plot_folder, plot_filename), dpi=300)
+        plt.close()
+
+    return affect
+
+
+def get_mutation_effect(SNV_matrix_cdc, plot_effect):
+
+    SNV_mutation_effect_dict = {}
+
+    # get input file basename
+    SNV_matrix_cdc_path, SNV_matrix_cdc_basename, SNV_matrix_cdc_ext = sep_path_basename_ext(SNV_matrix_cdc)
+    plot_folder = '%s_mutation_effect_plot' % SNV_matrix_cdc_basename
+
+    sample_dict = {'1': 'Mono210_A', '5': 'Mono210_B', '9': 'Mono210_C',
+                   '2': 'MonoD2_A', '6': 'MonoD2_B', '10': 'MonoD2_C',
+                   '4': 'Coculture_A', '8': 'Coculture_B', '12': 'Coculture_C'}
+
+    # create outputs folder
+    if plot_effect == 1:
+        if os.path.isdir(plot_folder):
+            shutil.rmtree(plot_folder, ignore_errors=True)
+            if os.path.isdir(plot_folder):
+                shutil.rmtree(plot_folder, ignore_errors=True)
+            os.makedirs(plot_folder)
+        else:
+            os.makedirs(plot_folder)
+
+    # get mutation affect
+    header_no_tp_list = []
+    for each_snv in open(SNV_matrix_cdc):
+        each_snv_split = each_snv.strip().split('\t')
+
+        # get header list
+        if each_snv.startswith('\t'):
+            for each in each_snv_split:
+                header_no_tp = each.split('D')[0]
+                header_no_tp_list.append(header_no_tp)
+
+        if not each_snv.startswith('\t'):
+
+            snv_id = each_snv_split[0]
+            occur_profile = []
+
+            if (each_snv_split[1] != '0') or (each_snv_split[2] != '0') or (each_snv_split[3] != '0') or (each_snv_split[4] != '0'):
+                frequency_list = [float(each_snv_split[1]), float(each_snv_split[2]), float(each_snv_split[3]), float(each_snv_split[4])]
+                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[1 - 1]])
+                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
+                occur_profile.append('%s_%s' % (header_no_tp_list[1 - 1], affect))
+
+            if (each_snv_split[5] != '0') or (each_snv_split[6] != '0') or (each_snv_split[7] != '0') or (each_snv_split[8] != '0'):
+                frequency_list = [float(each_snv_split[5]), float(each_snv_split[6]), float(each_snv_split[7]), float(each_snv_split[8])]
+                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[5 - 1]])
+                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
+                occur_profile.append('%s_%s' % (header_no_tp_list[5 - 1], affect))
+
+            if (each_snv_split[9] != '0') or (each_snv_split[10] != '0') or (each_snv_split[11] != '0') or (each_snv_split[12] != '0'):
+                frequency_list = [float(each_snv_split[9]), float(each_snv_split[10]), float(each_snv_split[11]), float(each_snv_split[12])]
+                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[9 - 1]])
+                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
+                occur_profile.append('%s_%s' % (header_no_tp_list[9 - 1], affect))
+
+            if (each_snv_split[13] != '0') or (each_snv_split[14] != '0') or (each_snv_split[15] != '0') or (each_snv_split[16] != '0'):
+                frequency_list = [float(each_snv_split[13]), float(each_snv_split[14]), float(each_snv_split[15]), float(each_snv_split[16])]
+                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[13 - 1]])
+                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
+                occur_profile.append('%s_%s' % (header_no_tp_list[13 - 1], affect))
+
+            if (each_snv_split[17] != '0') or (each_snv_split[18] != '0') or (each_snv_split[19] != '0') or (each_snv_split[20] != '0'):
+                frequency_list = [float(each_snv_split[17]), float(each_snv_split[18]), float(each_snv_split[19]), float(each_snv_split[20])]
+                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[17 - 1]])
+                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
+                occur_profile.append('%s_%s' % (header_no_tp_list[17 - 1], affect))
+
+            if (each_snv_split[21] != '0') or (each_snv_split[22] != '0') or (each_snv_split[23] != '0') or (each_snv_split[24] != '0'):
+                frequency_list = [float(each_snv_split[21]), float(each_snv_split[22]), float(each_snv_split[23]), float(each_snv_split[24])]
+                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[21 - 1]])
+                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
+                occur_profile.append('%s_%s' % (header_no_tp_list[21 - 1], affect))
+
+            SNV_mutation_effect_dict[snv_id] = '|'.join(occur_profile)
+
+    return SNV_mutation_effect_dict
 
 
 ############################################### input file and parameters ##############################################
@@ -191,6 +472,27 @@ transl_table = 11
 pwd_QC_txt = 'SNV_QC.txt'
 ending_len_cutoff = 50000
 exculding_regions = ''
+plot_effect = 0
+
+matrix_header_210 = ['1D9', '1D18', '1D27', '1D42', '5D9', '5D18', '5D27', '5D42', '9D9', '9D18', '9D27', '9D42', '4D9', '4D18', '4D27', '4D42', '8D9', '8D18', '8D27', '8D42', '12D9', '12D18', '12D27', '12D42']
+matrix_header_D2 = ['2D9', '2D18', '2D27', '2D42', '6D9', '6D18', '6D27', '6D42', '10D9', '10D18', '10D27', '10D42', '4D9', '4D18', '4D27', '4D42', '8D9', '8D18', '8D27', '8D42', '12D9', '12D18', '12D27', '12D42']
+
+
+########################################## read function annotation into dict ##########################################
+
+# store annotation results in dicts
+gene_COG_cat_dict = {}
+gene_COG_id_dict = {}
+gene_COG_function_dict = {}
+for each_snv3 in open(annotation_file):
+    each_snv3_split = each_snv3.strip().split('\t')
+    gene_id = each_snv3_split[0]
+    COG_cat = each_snv3_split[10]
+    COG_id = each_snv3_split[8]
+    COG_function = each_snv3_split[9]
+    gene_COG_cat_dict[gene_id] = COG_cat
+    gene_COG_id_dict[gene_id] = COG_id
+    gene_COG_function_dict[gene_id] = COG_function
 
 
 ############################################## remove continuous deletion ##############################################
@@ -220,11 +522,9 @@ os.system('rm %s' % pwd_QC_txt_sorted)
 ref_len_dict = {}
 for each_ref in SeqIO.parse(combined_ref_fasta, 'fasta'):
     ref_len_dict[each_ref.id] = len(each_ref.seq)
-print(ref_len_dict)
 
 qualified_SNVs_even_flanking_depth_file = 'SNV_QC_ncd_even_depth.txt'
 qualified_SNVs_diff_flanking_depth_file = 'SNV_QC_ncd_diff_depth.txt'
-
 qualified_SNVs_even_flanking_depth_file_handle = open(qualified_SNVs_even_flanking_depth_file, 'w')
 qualified_SNVs_diff_flanking_depth_file_handle = open(qualified_SNVs_diff_flanking_depth_file, 'w')
 
@@ -413,12 +713,6 @@ co_210_SNV_list = unique_list_elements(co_210_SNV_list)
 mono_D2_SNV_list = unique_list_elements(mono_D2_SNV_list)
 co_D2_SNV_list = unique_list_elements(co_D2_SNV_list)
 
-
-print(mono_210_SNV_list)
-print(co_210_SNV_list)
-print(mono_D2_SNV_list)
-print(co_D2_SNV_list)
-
 # 210
 SNV_210_concurrence = set(mono_210_SNV_list).intersection(co_210_SNV_list)
 SNV_210_mono_uniq = remove_l2_elements_from_l1(mono_210_SNV_list, SNV_210_concurrence)
@@ -482,19 +776,61 @@ for each_snv3 in open(annotation_file):
     gene_COG_function_dict[gene_id] = COG_function
 
 
+###################################################### get matrix ######################################################
+
+# for report
+print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Get matrix')
+
+# file in:
+# SNV_QC_ncd_even_depth.txt
+
+# file out:
+# SNV_QC_ncd_even_depth_matrix_210.txt
+# SNV_QC_ncd_even_depth_matrix_D2.txt
+
+qualified_SNVs_even_flanking_depth_file_basename, qualified_SNVs_even_flanking_depth_file_ext = os.path.splitext(qualified_SNVs_even_flanking_depth_file)
+SNV_file_out_210 = '%s_matrix_210.txt' % qualified_SNVs_even_flanking_depth_file_basename
+SNV_file_out_D2 = '%s_matrix_D2.txt' % qualified_SNVs_even_flanking_depth_file_basename
+
+get_matrix(qualified_SNVs_even_flanking_depth_file, SNV_file_out_210, SNV_file_out_D2)
+
+
+################################################# get mutation effect ##################################################
+
+# for report
+print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Get mutation effect')
+
+# plot mutation effect and get the dict
+SNV_mutation_effect_dict_210 = get_mutation_effect(SNV_file_out_210, plot_effect)
+SNV_mutation_effect_dict_D2 = get_mutation_effect(SNV_file_out_D2, plot_effect)
+
+# merge two dict
+SNV_mutation_effect_combined = merge_two_dict(SNV_mutation_effect_dict_210, SNV_mutation_effect_dict_D2)
+
+
+#################################################### check parallel ####################################################
+
+# for report
+print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Check parallel')
+
+# get SNV_parallel_dict
+SNV_parallel_dict_210 = check_parallel(SNV_file_out_210)
+SNV_parallel_dict_D2 = check_parallel(SNV_file_out_D2)
+
+# merge two dict
+SNV_parallel_dict_combined = merge_two_dict(SNV_parallel_dict_210, SNV_parallel_dict_D2)
+
+
 ################################################## get_mutated_genes ###################################################
 
 SNV_matrix_cdc_list = [SNV_210_mono_uniq_file, SNV_210_co_uniq_file, SNV_210_concurrence_file, SNV_D2_mono_uniq_file, SNV_D2_co_uniq_file, SNV_D2_concurrence_file]
-print(SNV_matrix_cdc_list)
 
 print('\n############################## report 3 ##############################')
 
 for SNV_matrix_cdc in SNV_matrix_cdc_list:
-    print(SNV_matrix_cdc)
 
     # output files
     SNV_matrix_cdc_path, SNV_matrix_cdc_basename, SNV_matrix_cdc_ext = sep_path_basename_ext(SNV_matrix_cdc)
-    output_mutated_genes = '%s_mutated_genes.txt' % SNV_matrix_cdc_basename
     output_mutated_genes_cate = '%s_mutated_genes_category.txt' % SNV_matrix_cdc_basename
     output_mutated_genes_cate_fun = '%s_mutated_genes_cate_fun.txt' % SNV_matrix_cdc_basename
     output_summary = '%s_summary.txt' % SNV_matrix_cdc_basename
@@ -547,7 +883,7 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
             for each_pos in pos_list:
                 coding_region_dict[seq_id].append(each_pos)
 
-    output_handle = open(output_mutated_genes, 'w')
+    output_handle = open(output_summary, 'w')
     for each_snv in open(SNV_matrix_cdc):
         if not each_snv.startswith('\t'):
             each_snv_seq = each_snv.strip().split(',')[0].split('|')[0]
@@ -564,9 +900,12 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
                 location = 'Coding'
             else:
                 location = 'Intergenic'
-                output_handle.write('%s\t%s\tNA\tNA\tNA\tNA\n' % (each_snv.strip().split('\t')[0], location))
+                output_handle.write('%s\t%s\t%s\tNA\tNA\tNA\tNA\t%s\tNA\tNA\n' % (each_snv.strip().split('\t')[0],
+                                                                                  SNV_parallel_dict_combined[each_snv.strip()],
+                                                                                  location,
+                                                                                  SNV_mutation_effect_combined[each_snv.strip()]))
 
-            # get mutation type
+            # get current gene's COG ID, description, mutation type and mutation effect
             if location == 'Coding':
                 for each_gene in ORF_ending_pos_dict:
                     if (each_snv_seq == ORF_seq_id_dict[each_gene]) and (ORF_ending_pos_dict[each_gene][0] <= each_snv_pos <= ORF_ending_pos_dict[each_gene][1]):
@@ -579,10 +918,28 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
                         snv_pos_rescaled = each_snv_pos - (ORF_ending_pos_dict[each_gene][0] - 1)
                         mutation_type = ''
 
+                        # get current gene's COG ID and description
+                        current_COG_id = ''
+                        current_COG_function = ''
+                        if each_gene in gene_COG_id_dict:
+                            current_COG_id = gene_COG_id_dict[each_gene]
+                            current_COG_function = gene_COG_function_dict[each_gene]
+                        else:
+                            current_COG_id = 'NA'
+                            current_COG_function = 'NA'
+
+                        # get current gene's mutation type
                         if each_snv_pos_v == '-':
                             mutation_type = 'Frameshift'
-                            output_handle.write('%s\t%s\t%s\t%s\tNA\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, mutation_type))
-
+                            output_handle.write('%s\t%s\t%s\t%s\t%s\tNA\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0],
+                                                                                              SNV_parallel_dict_combined[each_snv.strip()],
+                                                                                              location,
+                                                                                              ORF_strand_dict[each_gene],
+                                                                                              each_gene,
+                                                                                              mutation_type,
+                                                                                              SNV_mutation_effect_combined[each_snv.strip()],
+                                                                                              gene_COG_id_dict[each_gene],
+                                                                                              gene_COG_function_dict[each_gene]))
                         elif each_snv_pos_v in ['A', 'T', 'C', 'G']:
 
                             # get all reading frame
@@ -628,12 +985,21 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
                             aa_mutation = '%s(%s)->%s(%s)' % (rf_seq_raw, rf_seq_raw_aa, rf_seq_mutated, rf_seq_mutated_aa)
 
                             # print out
-                            for_write = '%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0], location, ORF_strand_dict[each_gene], each_gene, aa_mutation, mutation_type_term)
+                            for_write = '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0],
+                                                                                      SNV_parallel_dict_combined[each_snv.strip()],
+                                                                                      location,
+                                                                                      ORF_strand_dict[each_gene],
+                                                                                      each_gene,
+                                                                                      aa_mutation,
+                                                                                      mutation_type_term,
+                                                                                      SNV_mutation_effect_combined[each_snv.strip()],
+                                                                                      gene_COG_id_dict[each_gene],
+                                                                                      gene_COG_function_dict[each_gene])
                             output_handle.write(for_write)
     output_handle.close()
 
     # get mutation_cate_summary
-    mutation_cate_dict = get_mutation_cate_summary(output_mutated_genes, output_mutated_genes_cate)
+    mutation_cate_dict = get_mutation_cate_summary(output_summary, output_mutated_genes_cate)
 
     # report
     print('The number of affected genes for %s: %s' % (SNV_matrix_cdc, len(mutation_cate_dict)))
@@ -655,156 +1021,129 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
     output_seq_aa_handle.close()
 
 
-    ########################################## read function annotation into dict ##########################################
-
-    # store annotation results in dicts
-    gene_COG_cat_dict = {}
-    gene_COG_id_dict = {}
-    gene_COG_function_dict = {}
-    for each_snv3 in open(annotation_file):
-        each_snv3_split = each_snv3.strip().split('\t')
-        gene_id = each_snv3_split[0]
-        COG_cat = each_snv3_split[10]
-        COG_id = each_snv3_split[8]
-        COG_function = each_snv3_split[9]
-        gene_COG_cat_dict[gene_id] = COG_cat
-        gene_COG_id_dict[gene_id] = COG_id
-        gene_COG_function_dict[gene_id] = COG_function
-
-    ############################################### combine mutation effect ################################################
-
-    output_summary_handle = open(output_summary, 'w')
-    for each_snv4 in open(output_mutated_genes):
-        snv_id4 = each_snv4.strip().split('\t')[0]
-        gene_id4 = each_snv4.strip().split('\t')[3]
-
-        current_COG_id2 = ''
-        current_COG_function2 = ''
-        if gene_id4 in gene_COG_id_dict:
-            current_COG_id2 = gene_COG_id_dict[gene_id4]
-            current_COG_function2 = gene_COG_function_dict[gene_id4]
-        else:
-            current_COG_id2 = 'NA'
-            current_COG_function2 = 'NA'
-
-        for_write2 = '%s\t%s\t%s\n' % (each_snv4.strip(), current_COG_id2, current_COG_function2)
-        output_summary_handle.write(for_write2)
-    output_summary_handle.close()
-
-    # remove tmp file
-    os.system('rm %s' % output_mutated_genes_cate)
-    os.system('rm %s' % output_mutated_genes)
-    os.system('rm %s' % output_seq_nc)
-    os.system('rm %s' % output_seq_aa)
-
-
-########################################################################################################################
-
-print('\n############################## report 4 ##############################')
-strain_list = ['210', 'D2']
-for strain in strain_list:
-
-    # output file
-    output_mutated_genes = 'mutated_genes_%s.txt' % strain
-    output_mutated_genes_handle = open(output_mutated_genes, 'w')
-
-    all_affected_gene_list = []
-    gene_occurence_dict = {}
-    gene_occurence_count_dict = {}
-
-    for each_gene in open('SNV_ncd_%s_co_uniq_summary.txt' % strain):
-        gene_id = each_gene.split('\t')[3]
-        if gene_id != 'NA':
-
-            if gene_id not in all_affected_gene_list:
-                all_affected_gene_list.append(gene_id)
-
-            if gene_id not in gene_occurence_count_dict:
-                gene_occurence_count_dict[gene_id] = 1
-            else:
-                gene_occurence_count_dict[gene_id] += 1
-            if gene_id not in gene_occurence_dict:
-                gene_occurence_dict[gene_id] = ['co']
-
-    for each_gene in open('SNV_ncd_%s_mono_uniq_summary.txt' % strain):
-        gene_id = each_gene.split('\t')[3]
-        if gene_id != 'NA':
-
-            if gene_id not in all_affected_gene_list:
-                all_affected_gene_list.append(gene_id)
-
-            if gene_id not in gene_occurence_count_dict:
-                gene_occurence_count_dict[gene_id] = 1
-            else:
-                gene_occurence_count_dict[gene_id] += 1
-            if gene_id not in gene_occurence_dict:
-                gene_occurence_dict[gene_id] = ['mono']
-            else:
-                if 'mono' not in gene_occurence_dict[gene_id]:
-                    gene_occurence_dict[gene_id].append('mono')
-
-    for each_gene in open('SNV_ncd_%s_concurrence_summary.txt' % strain):
-        gene_id = each_gene.split('\t')[3]
-        if gene_id != 'NA':
-
-            if gene_id not in all_affected_gene_list:
-                all_affected_gene_list.append(gene_id)
-
-            if gene_id not in gene_occurence_count_dict:
-                gene_occurence_count_dict[gene_id] = 1
-            else:
-                gene_occurence_count_dict[gene_id] += 1
-            if gene_id not in gene_occurence_dict:
-                gene_occurence_dict[gene_id] = ['both']
-            else:
-                if 'both' not in gene_occurence_dict[gene_id]:
-                    gene_occurence_dict[gene_id].append('both')
-
-    mutated_gene_nomo_uniq = 0
-    mutated_gene_co_uniq = 0
-    mutated_gene_concurrence = 0
-    for each_mutated_gene in gene_occurence_dict:
-        if gene_occurence_dict[each_mutated_gene] == ['mono']:
-            mutated_gene_nomo_uniq += 1
-        elif gene_occurence_dict[each_mutated_gene] == ['co']:
-            mutated_gene_co_uniq += 1
-        else:
-            mutated_gene_concurrence += 1
-
-    # for report:
-    print('The number of mutated %s gene uniq to monoculture: %s' % (strain, mutated_gene_nomo_uniq))
-    print('The number of mutated %s gene uniq to coculture: %s' % (strain, mutated_gene_co_uniq))
-    print('The number of mutated %s gene with concurrence: %s' % (strain, mutated_gene_concurrence))
-    print('Details exported to %s\n' % output_mutated_genes)
-
-    # write out
-    for each_affected_gene in all_affected_gene_list:
-
-        existence = ''
-        existence_profile = gene_occurence_dict[each_affected_gene]
-        if len(existence_profile) == 1:
-            if existence_profile == ['mono']:
-                existence = 'mono'
-            elif existence_profile == ['co']:
-                existence = 'co'
-            elif existence_profile == ['both']:
-                existence = 'both'
-        elif len(existence_profile) > 1:
-            existence = 'both'
-
-        current_COG_id2 = ''
-        current_COG_function2 = ''
-        if each_affected_gene in gene_COG_id_dict:
-            current_COG_id2 = gene_COG_id_dict[each_affected_gene]
-            current_COG_function2 = gene_COG_function_dict[each_affected_gene]
-        else:
-            current_COG_id2 = 'NA'
-            current_COG_function2 = 'NA'
-
-        for_report = '%s\t%s\t%s\t%s\t%s\n' % (each_affected_gene, existence, gene_occurence_count_dict[each_affected_gene], current_COG_id2, current_COG_function2)
-        output_mutated_genes_handle.write(for_report)
-
-    output_mutated_genes_handle.close()
+# ########################################################################################################################
+# ##################################################### at gene level ####################################################
+# ########################################################################################################################
+#
+# print('\n############################## report 4 ##############################')
+# strain_list = ['210', 'D2']
+# for strain in strain_list:
+#
+#     # output file
+#     output_mutated_genes = 'mutated_genes_%s.txt' % strain
+#     output_mutated_genes_handle = open(output_mutated_genes, 'w')
+#
+#     all_affected_gene_list = []
+#     gene_occurence_dict = {}
+#     gene_occurence_count_dict = {}
+#
+#     for each_gene in open('SNV_ncd_%s_co_uniq_summary.txt' % strain):
+#         gene_id = each_gene.split('\t')[4]
+#         if gene_id != 'NA':
+#
+#             if gene_id not in all_affected_gene_list:
+#                 all_affected_gene_list.append(gene_id)
+#
+#             if gene_id not in gene_occurence_count_dict:
+#                 gene_occurence_count_dict[gene_id] = 1
+#             else:
+#                 gene_occurence_count_dict[gene_id] += 1
+#             if gene_id not in gene_occurence_dict:
+#                 gene_occurence_dict[gene_id] = ['co']
+#
+#     for each_gene in open('SNV_ncd_%s_mono_uniq_summary.txt' % strain):
+#         gene_id = each_gene.split('\t')[4]
+#         if gene_id != 'NA':
+#
+#             if gene_id not in all_affected_gene_list:
+#                 all_affected_gene_list.append(gene_id)
+#
+#             if gene_id not in gene_occurence_count_dict:
+#                 gene_occurence_count_dict[gene_id] = 1
+#             else:
+#                 gene_occurence_count_dict[gene_id] += 1
+#             if gene_id not in gene_occurence_dict:
+#                 gene_occurence_dict[gene_id] = ['mono']
+#             else:
+#                 if 'mono' not in gene_occurence_dict[gene_id]:
+#                     gene_occurence_dict[gene_id].append('mono')
+#
+#     for each_gene in open('SNV_ncd_%s_concurrence_summary.txt' % strain):
+#         gene_id = each_gene.split('\t')[4]
+#         if gene_id != 'NA':
+#
+#             if gene_id not in all_affected_gene_list:
+#                 all_affected_gene_list.append(gene_id)
+#
+#             if gene_id not in gene_occurence_count_dict:
+#                 gene_occurence_count_dict[gene_id] = 1
+#             else:
+#                 gene_occurence_count_dict[gene_id] += 1
+#             if gene_id not in gene_occurence_dict:
+#                 gene_occurence_dict[gene_id] = ['both']
+#             else:
+#                 if 'both' not in gene_occurence_dict[gene_id]:
+#                     gene_occurence_dict[gene_id].append('both')
+#
+#     mutated_gene_nomo_uniq = 0
+#     mutated_gene_co_uniq = 0
+#     mutated_gene_concurrence = 0
+#     for each_mutated_gene in gene_occurence_dict:
+#         if gene_occurence_dict[each_mutated_gene] == ['mono']:
+#             mutated_gene_nomo_uniq += 1
+#         elif gene_occurence_dict[each_mutated_gene] == ['co']:
+#             mutated_gene_co_uniq += 1
+#         else:
+#             mutated_gene_concurrence += 1
+#
+#     # for report:
+#     print('The number of mutated %s gene uniq to monoculture: %s' % (strain, mutated_gene_nomo_uniq))
+#     print('The number of mutated %s gene uniq to coculture: %s' % (strain, mutated_gene_co_uniq))
+#     print('The number of mutated %s gene with concurrence: %s' % (strain, mutated_gene_concurrence))
+#     print('Details exported to %s\n' % output_mutated_genes)
+#
+#     # write out
+#     for each_affected_gene in all_affected_gene_list:
+#
+#         existence = ''
+#         existence_profile = gene_occurence_dict[each_affected_gene]
+#         if len(existence_profile) == 1:
+#             if existence_profile == ['mono']:
+#                 existence = 'mono'
+#             elif existence_profile == ['co']:
+#                 existence = 'co'
+#             elif existence_profile == ['both']:
+#                 existence = 'both'
+#         elif len(existence_profile) > 1:
+#             existence = 'both'
+#
+#         current_COG_id2 = ''
+#         current_COG_function2 = ''
+#         if each_affected_gene in gene_COG_id_dict:
+#             current_COG_id2 = gene_COG_id_dict[each_affected_gene]
+#             current_COG_function2 = gene_COG_function_dict[each_affected_gene]
+#         else:
+#             current_COG_id2 = 'NA'
+#             current_COG_function2 = 'NA'
+#
+#         for_report = '%s\t%s\t%s\t%s\t%s\n' % (each_affected_gene, existence, gene_occurence_count_dict[each_affected_gene], current_COG_id2, current_COG_function2)
+#         output_mutated_genes_handle.write(for_report)
+#
+#     output_mutated_genes_handle.close()
 
 
-############################################### get matrix from QC file ################################################
+################################################ remove temporary files ################################################
+
+# os.system('rm %s' % output_mutated_genes_cate)
+os.system('rm %s' % SNV_210_mono_uniq_file)
+os.system('rm %s' % SNV_210_co_uniq_file)
+os.system('rm %s' % SNV_210_concurrence_file)
+os.system('rm %s' % SNV_D2_mono_uniq_file)
+os.system('rm %s' % SNV_D2_co_uniq_file)
+os.system('rm %s' % SNV_D2_concurrence_file)
+
+
+
+
+
+

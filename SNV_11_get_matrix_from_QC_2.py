@@ -765,6 +765,9 @@ print()
 
 ###################################################### get matrix ######################################################
 
+print('Run get matrix')
+print(qualified_SNVs_even_flanking_depth_file)
+print(CCD)
 get_matrix(qualified_SNVs_even_flanking_depth_file, CCD)
 
 
