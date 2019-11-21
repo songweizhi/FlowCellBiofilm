@@ -93,6 +93,7 @@ def unique_list_elements(list_input):
 
     return list_output
 
+
 ##################################################### CONFIGURATION ####################################################
 
 parser = argparse.ArgumentParser()

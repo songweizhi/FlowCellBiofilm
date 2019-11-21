@@ -1,16 +1,30 @@
 import os
 import shutil
 import argparse
+import numpy as np
+from datetime import datetime
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
-from datetime import datetime
-import numpy as np
 from scipy import stats
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+import os
+import shutil
+
+
+def force_create_folder(folder_to_create):
+    if os.path.isdir(folder_to_create):
+        shutil.rmtree(folder_to_create, ignore_errors=True)
+        if os.path.isdir(folder_to_create):
+            shutil.rmtree(folder_to_create, ignore_errors=True)
+            if os.path.isdir(folder_to_create):
+                shutil.rmtree(folder_to_create, ignore_errors=True)
+                if os.path.isdir(folder_to_create):
+                    shutil.rmtree(folder_to_create, ignore_errors=True)
+    os.mkdir(folder_to_create)
 
 
 def turn_element_to_str(list_in):
@@ -26,8 +40,88 @@ def turn_element_to_str(list_in):
 def merge_two_dict(dict_a, dict_b):
     dict_c = dict_a.copy()
     dict_c.update(dict_b)
-
     return dict_c
+
+
+def sep_path_basename_ext(file_in):
+
+    # separate path and file name
+    file_path, file_name = os.path.split(file_in)
+    if file_path == '':
+        file_path = '.'
+
+    # separate file basename and extension
+    file_basename, file_ext = os.path.splitext(file_name)
+
+    return file_path, file_basename, file_ext
+
+
+def remove_l2_elements_from_l1(l1, l2):
+
+    l1_new = []
+    for each in l1:
+        if each not in l2:
+            l1_new.append(each)
+    return l1_new
+
+
+def unique_list_elements(list_input):
+
+    list_output = []
+    for each_element in list_input:
+        if each_element not in list_output:
+            list_output.append(each_element)
+
+    return list_output
+
+
+def write_out(list, op_file):
+
+    op_file_handle = open(op_file, 'w')
+    for each in list:
+        op_file_handle.write('%s\n' % each)
+    op_file_handle.close()
+
+
+def combined_continuous_deletions(pwd_QC_txt_cd, pwd_QC_txt_cd_combined):
+
+    current_sample = ''
+    current_seq = ''
+    current_pos_start = 0
+    previous_snv_pos = 0
+    deleted_ncs = ''
+    deepSNV_output_cdc_handle = open(pwd_QC_txt_cd_combined, 'w')
+    for each_snv in open(pwd_QC_txt_cd):
+
+        each_snv_split = each_snv.strip().split(',')
+        each_snv_sample =   each_snv_split[0]
+        each_snv_seq =      each_snv_split[1]
+        each_snv_pos =      int(each_snv_split[2])
+        each_snv_pos_wt =   each_snv_split[3]
+
+        if (current_sample == '') and (current_seq == '') and (current_pos_start == 0):
+            current_sample = each_snv_sample
+            current_seq = each_snv_seq
+            current_pos_start = each_snv_pos
+            previous_snv_pos = each_snv_pos
+            deleted_ncs = each_snv_pos_wt
+        elif (current_sample == each_snv_sample) and (current_seq == each_snv_seq) and (each_snv_pos == previous_snv_pos + 1):
+            previous_snv_pos = each_snv_pos
+            deleted_ncs += each_snv_pos_wt
+        elif (current_sample != each_snv_sample) or (current_seq != each_snv_seq) or (each_snv_pos != previous_snv_pos + 1):
+            for_out = '%s|%s|%s-%s|%s|%s\n' % (current_sample, current_seq, current_pos_start, previous_snv_pos, deleted_ncs, '-'*len(deleted_ncs))
+            deepSNV_output_cdc_handle.write(for_out)
+
+            current_sample = each_snv_sample
+            current_seq = each_snv_seq
+            current_pos_start = each_snv_pos
+            previous_snv_pos = each_snv_pos
+            deleted_ncs = each_snv_pos_wt
+
+    for_out = '%s|%s|%s-%s|%s|%s\n' % (current_sample, current_seq, current_pos_start, previous_snv_pos, deleted_ncs, '-'*len(deleted_ncs))
+    deepSNV_output_cdc_handle.write(for_out)
+
+    deepSNV_output_cdc_handle.close()
 
 
 def separate_continuous_deletion(file_in, file_out_cd, file_out_ncd):
@@ -99,48 +193,6 @@ def separate_continuous_deletion(file_in, file_out_cd, file_out_ncd):
     file_out_ncd_handle.close()
 
 
-def unique_list_elements(list_input):
-
-    list_output = []
-    for each_element in list_input:
-        if each_element not in list_output:
-            list_output.append(each_element)
-
-    return list_output
-
-
-def remove_l2_elements_from_l1(l1, l2):
-
-    l1_new = []
-    for each in l1:
-        if each not in l2:
-            l1_new.append(each)
-    return l1_new
-
-
-def write_out(op_file, list):
-
-    op_file_handle = open(op_file, 'w')
-
-    for each in list:
-        op_file_handle.write('%s\n' % each)
-
-    op_file_handle.close()
-
-
-def sep_path_basename_ext(file_in):
-
-    # separate path and file name
-    file_path, file_name = os.path.split(file_in)
-    if file_path == '':
-        file_path = '.'
-
-    # separate file basename and extension
-    file_basename, file_ext = os.path.splitext(file_name)
-
-    return file_path, file_basename, file_ext
-
-
 def get_rf_pos_list(gene_len):
 
     rf_pos_list = []
@@ -153,34 +205,17 @@ def get_rf_pos_list(gene_len):
     return rf_pos_list
 
 
-def get_mutation_cate_summary(file_in, file_out):
+def get_categorical_scatter_plot(num_list, label_list, label_rotation, output_plot):
 
-    mutation_cate_dict = {}
-    for each_snv in open(file_in):
-        each_snv_split = each_snv.strip().split('\t')
-        mutated_gene = each_snv_split[4]
-        mutation_cate = each_snv_split[6]
+    num_index = list(range(1, len(num_list) + 1))
 
-        if mutated_gene != 'NA':
-            if mutated_gene not in mutation_cate_dict:
-                mutation_cate_dict[mutated_gene] = [mutation_cate]
-            else:
-                mutation_cate_dict[mutated_gene].append(mutation_cate)
-
-    mutation_cate_list = ['Missense', 'Nonsense', 'Silent', 'Fragment_deletion', 'Frameshift']
-
-    file_out_handle = open(file_out, 'w')
-    file_out_handle.write('Gene\tMis\tNon\tSilen\tFD\tFS\n')
-    for each_gene in mutation_cate_dict:
-
-        mutation_cate_occurence = []
-        for each_cate in mutation_cate_list:
-            mutation_cate_occurence.append(str(mutation_cate_dict[each_gene].count(each_cate)))
-        file_out_handle.write('%s\t%s\n' % (each_gene, '\t'.join(mutation_cate_occurence)))
-
-    file_out_handle.close()
-
-    return mutation_cate_dict
+    plt.scatter(num_index, num_list)
+    plt.xticks(num_index, label_list, rotation=label_rotation)
+    plt.margins(0.2)
+    plt.subplots_adjust(bottom=0.15)
+    plt.tight_layout()
+    plt.savefig(output_plot, dpi=300)
+    plt.close()
 
 
 def get_matrix(SNV_file_in, SNV_file_out_frequency_210, SNV_file_out_frequency_D2):
@@ -271,6 +306,7 @@ def check_occurrence(list_in):
 
 
 def check_parallel(matrix_file):
+
     parallel_dict = {}
     for snv in open(matrix_file):
 
@@ -289,7 +325,6 @@ def check_parallel(matrix_file):
 
             # get parallel profile
             parallel_profile = 'NA'
-
             if (mono_occurrence.count(1) >= 1) and (co_occurrence.count(1) >= 1):
                 parallel_profile = ('PMC(%s_%s)' % (''.join(turn_element_to_str(mono_occurrence)), ''.join(turn_element_to_str(co_occurrence))))
 
@@ -310,7 +345,8 @@ def check_parallel(matrix_file):
     return parallel_dict
 
 
-def get_affect(frequency_list, plot_effect, plot_folder, plot_filename):
+def get_affect_backup(frequency_list, plot_effect, plot_folder, plot_filename):
+
     time_point = [9, 18, 27, 42]
     time_point_rescaled = []
     for each_tp in time_point:
@@ -329,9 +365,9 @@ def get_affect(frequency_list, plot_effect, plot_folder, plot_filename):
 
     if frequency_arrary[-1] >= 25:
         affect = 'Positive'
-    elif (slope > 0) and (max_frequency >= 10):
+    elif (slope > 0) and (max_frequency >= 5):
         affect = 'Positive'
-    elif (slope < 0) and (max_frequency <= 10):
+    elif (slope < 0) and (max_frequency <= 5):
         affect = 'Negative'
     else:
         affect = 'Neutral'
@@ -362,27 +398,62 @@ def get_affect(frequency_list, plot_effect, plot_folder, plot_filename):
     return affect
 
 
-def get_mutation_effect(SNV_matrix_cdc, plot_effect):
+def get_mutation_cate_summary(file_in, file_out):
 
-    SNV_mutation_effect_dict = {}
+    mutation_cate_dict = {}
+    for each_snv in open(file_in):
+        each_snv_split = each_snv.strip().split('\t')
+        mutated_gene = each_snv_split[4]
+        mutation_cate = each_snv_split[6]
 
-    # get input file basename
-    SNV_matrix_cdc_path, SNV_matrix_cdc_basename, SNV_matrix_cdc_ext = sep_path_basename_ext(SNV_matrix_cdc)
-    plot_folder = '%s_mutation_effect_plot' % SNV_matrix_cdc_basename
+        if mutated_gene != 'NA':
+            if mutated_gene not in mutation_cate_dict:
+                mutation_cate_dict[mutated_gene] = [mutation_cate]
+            else:
+                mutation_cate_dict[mutated_gene].append(mutation_cate)
+
+    mutation_cate_list = ['Missense', 'Nonsense', 'Silent', 'Fragment_deletion', 'Frameshift']
+
+    file_out_handle = open(file_out, 'w')
+    file_out_handle.write('Gene\tMis\tNon\tSilen\tFD\tFS\n')
+    for each_gene in mutation_cate_dict:
+
+        mutation_cate_occurence = []
+        for each_cate in mutation_cate_list:
+            mutation_cate_occurence.append(str(mutation_cate_dict[each_gene].count(each_cate)))
+        file_out_handle.write('%s\t%s\n' % (each_gene, '\t'.join(mutation_cate_occurence)))
+
+    file_out_handle.close()
+
+    return mutation_cate_dict
+
+
+def scatter_plotter(frequency_list, label_name, plot_title, plot_filename):
+
+    frequency_list_percentage = [i * 100 for i in frequency_list]
+
+    num_index = list(range(1, len(frequency_list_percentage) + 1))
+    plt.scatter(num_index, frequency_list_percentage)
+    plt.xticks(num_index, label_name, rotation=0)
+
+    for i, txt in enumerate(frequency_list_percentage):
+        plt.annotate(txt, (num_index[i], frequency_list_percentage[i]))
+
+    plt.margins(0.2)
+    plt.subplots_adjust(bottom=0.15)
+    plt.xlabel('Time point')
+    plt.ylabel('Frequency (%)')
+    plt.title(plot_title, fontsize=5)
+    plt.tight_layout()
+    plt.savefig(plot_filename, dpi=300)
+    plt.close()
+
+
+def plot_freq(SNV_matrix_cdc, plot_folder, SNV_to_gene_dict, SNV_to_ko_id_dict, SNV_to_ko_desc_dict):
 
     sample_dict = {'1': 'Mono210_A', '5': 'Mono210_B', '9': 'Mono210_C',
                    '2': 'MonoD2_A', '6': 'MonoD2_B', '10': 'MonoD2_C',
                    '4': 'Coculture_A', '8': 'Coculture_B', '12': 'Coculture_C'}
-
-    # create outputs folder
-    if plot_effect == 1:
-        if os.path.isdir(plot_folder):
-            shutil.rmtree(plot_folder, ignore_errors=True)
-            if os.path.isdir(plot_folder):
-                shutil.rmtree(plot_folder, ignore_errors=True)
-            os.makedirs(plot_folder)
-        else:
-            os.makedirs(plot_folder)
 
     # get mutation affect
     header_no_tp_list = []
@@ -398,47 +469,96 @@ def get_mutation_effect(SNV_matrix_cdc, plot_effect):
         if not each_snv.startswith('\t'):
 
             snv_id = each_snv_split[0]
-            occur_profile = []
+            affected_gene = SNV_to_gene_dict[snv_id]
+            affected_gene_ko_id = SNV_to_ko_id_dict[snv_id]
+            affected_gene_ko_desc = SNV_to_ko_desc_dict[snv_id]
+            overall_title = '%s__%s__%s__%s' % (snv_id, affected_gene, affected_gene_ko_id, affected_gene_ko_desc)
+            num_index = [1, 2, 3, 4]
+            label_name = ['D9', 'D18', 'D27', 'D42']
+            combined_plot = '%s/%s.png' % (plot_folder, snv_id)
 
+            plt.figure()
+
+            plt.subplot(231)
+            subplot_231_frequency_list = [float(each_snv_split[1]) * 100, float(each_snv_split[2]) * 100, float(each_snv_split[3]) * 100, float(each_snv_split[4]) * 100]
             if (each_snv_split[1] != '0') or (each_snv_split[2] != '0') or (each_snv_split[3] != '0') or (each_snv_split[4] != '0'):
-                frequency_list = [float(each_snv_split[1]), float(each_snv_split[2]), float(each_snv_split[3]), float(each_snv_split[4])]
-                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[1 - 1]])
-                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
-                occur_profile.append('%s_%s' % (header_no_tp_list[1 - 1], affect))
+                plt.scatter(num_index, subplot_231_frequency_list, s=8)
+                for i, txt in enumerate(subplot_231_frequency_list):
+                    plt.annotate(txt, (num_index[i], subplot_231_frequency_list[i]), fontsize=5)
+                plt.xticks(num_index, label_name, rotation=0, fontsize=6)
+                plt.yticks(fontsize=6)
+            else:
+                plt.xticks([])
+                plt.yticks([])
+            plt.ylabel('Mono-culture', fontsize=8)
+            plt.title('A', fontsize=8)
 
+            plt.subplot(232)
+            subplot_232_frequency_list = [float(each_snv_split[5]) * 100, float(each_snv_split[6]) * 100, float(each_snv_split[7]) * 100, float(each_snv_split[8]) * 100]
             if (each_snv_split[5] != '0') or (each_snv_split[6] != '0') or (each_snv_split[7] != '0') or (each_snv_split[8] != '0'):
-                frequency_list = [float(each_snv_split[5]), float(each_snv_split[6]), float(each_snv_split[7]), float(each_snv_split[8])]
-                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[5 - 1]])
-                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
-                occur_profile.append('%s_%s' % (header_no_tp_list[5 - 1], affect))
+                plt.scatter(num_index, subplot_232_frequency_list, s=8)
+                for i, txt in enumerate(subplot_232_frequency_list):
+                    plt.annotate(txt, (num_index[i], subplot_232_frequency_list[i]), fontsize=5)
+                plt.xticks(num_index, label_name, rotation=0, fontsize=6)
+                plt.yticks(fontsize=6)
+            else:
+                plt.xticks([])
+                plt.yticks([])
+            plt.title('B', fontsize=8)
 
+            plt.subplot(233)
+            subplot_233_frequency_list = [float(each_snv_split[9]) * 100, float(each_snv_split[10]) * 100, float(each_snv_split[11]) * 100, float(each_snv_split[12]) * 100]
             if (each_snv_split[9] != '0') or (each_snv_split[10] != '0') or (each_snv_split[11] != '0') or (each_snv_split[12] != '0'):
-                frequency_list = [float(each_snv_split[9]), float(each_snv_split[10]), float(each_snv_split[11]), float(each_snv_split[12])]
-                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[9 - 1]])
-                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
-                occur_profile.append('%s_%s' % (header_no_tp_list[9 - 1], affect))
+                plt.scatter(num_index, subplot_233_frequency_list, s=8)
+                for i, txt in enumerate(subplot_233_frequency_list):
+                    plt.annotate(txt, (num_index[i], subplot_233_frequency_list[i]), fontsize=5)
+                plt.xticks(num_index, label_name, rotation=0, fontsize=6)
+                plt.yticks(fontsize=6)
+            else:
+                plt.xticks([])
+                plt.yticks([])
+            plt.title('C', fontsize=8)
 
+            plt.subplot(234)
+            subplot_234_frequency_list = [float(each_snv_split[13]) * 100, float(each_snv_split[14]) * 100, float(each_snv_split[15]) * 100, float(each_snv_split[16]) * 100]
             if (each_snv_split[13] != '0') or (each_snv_split[14] != '0') or (each_snv_split[15] != '0') or (each_snv_split[16] != '0'):
-                frequency_list = [float(each_snv_split[13]), float(each_snv_split[14]), float(each_snv_split[15]), float(each_snv_split[16])]
-                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[13 - 1]])
-                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
-                occur_profile.append('%s_%s' % (header_no_tp_list[13 - 1], affect))
+                plt.scatter(num_index, subplot_234_frequency_list, s=8)
+                for i, txt in enumerate(subplot_234_frequency_list):
+                    plt.annotate(txt, (num_index[i], subplot_234_frequency_list[i]), fontsize=5)
+                plt.xticks(num_index, label_name, rotation=0, fontsize=6)
+                plt.yticks(fontsize=6)
+            else:
+                plt.xticks([])
+                plt.yticks([])
+            plt.ylabel('Co-culture', fontsize=8)
 
+            plt.subplot(235)
+            subplot_235_frequency_list = [float(each_snv_split[17]) * 100, float(each_snv_split[18]) * 100, float(each_snv_split[19]) * 100, float(each_snv_split[20]) * 100]
             if (each_snv_split[17] != '0') or (each_snv_split[18] != '0') or (each_snv_split[19] != '0') or (each_snv_split[20] != '0'):
-                frequency_list = [float(each_snv_split[17]), float(each_snv_split[18]), float(each_snv_split[19]), float(each_snv_split[20])]
-                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[17 - 1]])
-                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
-                occur_profile.append('%s_%s' % (header_no_tp_list[17 - 1], affect))
+                plt.scatter(num_index, subplot_235_frequency_list, s=8)
+                for i, txt in enumerate(subplot_235_frequency_list):
+                    plt.annotate(txt, (num_index[i], subplot_235_frequency_list[i]), fontsize=5)
+                plt.xticks(num_index, label_name, rotation=0, fontsize=6)
+                plt.yticks(fontsize=6)
+            else:
+                plt.xticks([])
+                plt.yticks([])
 
+            plt.subplot(236)
+            subplot_236_frequency_list = [float(each_snv_split[21]) * 100, float(each_snv_split[22]) * 100, float(each_snv_split[23]) * 100, float(each_snv_split[24]) * 100]
             if (each_snv_split[21] != '0') or (each_snv_split[22] != '0') or (each_snv_split[23] != '0') or (each_snv_split[24] != '0'):
-                frequency_list = [float(each_snv_split[21]), float(each_snv_split[22]), float(each_snv_split[23]), float(each_snv_split[24])]
-                png_filename = '%s_%s' % (snv_id, sample_dict[header_no_tp_list[21 - 1]])
-                affect = get_affect(frequency_list, plot_effect, plot_folder, png_filename)
-                occur_profile.append('%s_%s' % (header_no_tp_list[21 - 1], affect))
+                plt.scatter(num_index, subplot_236_frequency_list, s=8)
+                for i, txt in enumerate(subplot_236_frequency_list):
+                    plt.annotate(txt, (num_index[i], subplot_236_frequency_list[i]), fontsize=5)
+                plt.xticks(num_index, label_name, rotation=0, fontsize=6)
+                plt.yticks(fontsize=6)
+            else:
+                plt.xticks([])
+                plt.yticks([])
 
-            SNV_mutation_effect_dict[snv_id] = '|'.join(occur_profile)
-
-    return SNV_mutation_effect_dict
+            plt.suptitle(overall_title, fontsize=5)
+            plt.savefig(combined_plot, dpi=300)
+            plt.close()
 
 
 ############################################### input file and parameters ##############################################
@@ -448,14 +568,17 @@ required = parser.add_argument_group('required arguments')
 optional = parser.add_argument_group('optional arguments')
 
 optional.add_argument('-h', action='help', help='Show this help message and exit')
-required.add_argument('-min_both', dest='MIN_BOTH', nargs='?', required=True, type=int, help='The minimum number of reads harboring SNV')
-required.add_argument('-min_each', dest='MIN_EACH', nargs='?', required=True, type=int, help='The minimum number of reads harboring SNV at each direction')
-required.add_argument('-strand_bias', dest='STRAND_BIAS', nargs='?', required=True, type=int, help='strand_bias cutoff')
-required.add_argument('-depth_diff', dest='DEPTH_DIFF', nargs='?', required=True,  type=int, help='depth difference cutoff')
-required.add_argument('-deplen', dest='DEPLEN', nargs='?', required=True, type=int, help='flanking length for mean depth calculation')
-required.add_argument('-sep_plot', dest='SEP_PLOT', nargs='?', required=False, type=int, help='separate depth plot with provide cutoff')
+required.add_argument('-snv_qc',        dest='SNV_QC',      nargs='?', required=True,   type=str, help='deepSNV QC file')
+required.add_argument('-min_both',      dest='MIN_BOTH',    nargs='?', required=True,   type=int, help='The minimum number of reads harboring SNV')
+required.add_argument('-min_each',      dest='MIN_EACH',    nargs='?', required=True,   type=int, help='The minimum number of reads harboring SNV at each direction')
+required.add_argument('-strand_bias',   dest='STRAND_BIAS', nargs='?', required=True,   type=int, help='strand_bias cutoff')
+required.add_argument('-depth_diff',    dest='DEPTH_DIFF',  nargs='?', required=True,   type=int, help='depth difference cutoff')
+required.add_argument('-deplen',        dest='DEPLEN',      nargs='?', required=True,   type=int, help='flanking length for mean depth calculation')
+required.add_argument('-sep_plot',      dest='SEP_PLOT',    nargs='?', required=False,  type=int, help='separate depth plot with provide cutoff')
+required.add_argument('-out',           dest='OUT',         nargs='?', required=True,             help='output dir')
 
 args = vars(parser.parse_args())
+SNV_quality_file = args['SNV_QC']
 min_var_reads_num = args['MIN_BOTH']
 min_at_each_direction = args['MIN_EACH']
 strand_bias_cutoff = args['STRAND_BIAS']
@@ -463,57 +586,97 @@ depth_difference_cutoff = args['DEPTH_DIFF']
 mean_depth_len = args['DEPLEN']
 separate_plot = args['SEP_PLOT']
 
-combined_ref_fasta = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/reference_files/combined_ref.fasta'
-combined_ref_gff = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/reference_files/combined_ref.gff'
-combined_ref_ffn = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/reference_files/combined_ref.ffn'
-combined_ref_faa = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/reference_files/combined_ref.faa'
-annotation_file = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/reference_files/combined_ref_aa.faa.COG.arCOG.kegg'
 transl_table = 11
-pwd_QC_txt = 'SNV_QC.txt'
 ending_len_cutoff = 50000
 exculding_regions = ''
-plot_effect = 0
+plot_snv_freq = True
+permanova = 1
+pwd_plot_folder = 'SNV_depth_plot'
+
+output_dir = 'OneStep_MinBoth_%s_MinEach_%s_StrandBias_%s_DepthDiff_%s' % (min_var_reads_num,
+                                                                           min_at_each_direction,
+                                                                           strand_bias_cutoff,
+                                                                           depth_difference_cutoff)
+
+################################################ prepare files and list ################################################
+
+combined_ref_fasta = '/Users/songweizhi/Research/Flow_cell_datasets/reference_files/combined_ref.fasta'
+combined_ref_gff = '/Users/songweizhi/Research/Flow_cell_datasets/reference_files/combined_ref.gff'
+combined_ref_ffn = '/Users/songweizhi/Research/Flow_cell_datasets/reference_files/combined_ref.ffn'
+combined_ref_faa = '/Users/songweizhi/Research/Flow_cell_datasets/reference_files/combined_ref.faa'
+annotation_file = '/Users/songweizhi/Research/Flow_cell_datasets/reference_files/combined_ref_aa.faa.COG.arCOG.kegg'
+annotation_file_KEGG = '/Users/songweizhi/Research/Flow_cell_datasets/reference_files/combined_ref_ko_assignment_ABCD.txt'
 
 matrix_header_210 = ['1D9', '1D18', '1D27', '1D42', '5D9', '5D18', '5D27', '5D42', '9D9', '9D18', '9D27', '9D42', '4D9', '4D18', '4D27', '4D42', '8D9', '8D18', '8D27', '8D42', '12D9', '12D18', '12D27', '12D42']
 matrix_header_D2 = ['2D9', '2D18', '2D27', '2D42', '6D9', '6D18', '6D27', '6D42', '10D9', '10D18', '10D27', '10D42', '4D9', '4D18', '4D27', '4D42', '8D9', '8D18', '8D27', '8D42', '12D9', '12D18', '12D27', '12D42']
+
+force_create_folder(output_dir)
+
+# parallel profile
+# PMC   parallel in monoculture and coculture
+# PM    parallel in monoculture
+# PC    parallel in coculture
+# NPM   non-parallel and monoculture only
+# NPC   non-parallel and coculture only
+
+################################################ define output filename ################################################
+
+pwd_QC_txt_sorted =                     '%s/SNV_QC_sorted.txt'                                      % output_dir
+pwd_QC_txt_cd =                         '%s/SNV_QC_cd.txt'                                          % output_dir
+pwd_QC_txt_cd_combined =                '%s/SNV_QC_cd_combined.txt'                                 % output_dir
+pwd_QC_txt_ncd =                        '%s/SNV_QC_ncd.txt'                                         % output_dir
+qualified_SNVs_even_flk_depth_file =    '%s/SNV_QC_ncd_even_flk_depth.txt'                          % output_dir
+qualified_SNVs_diff_flk_depth_file =    '%s/SNV_QC_ncd_diff_flk_depth.txt'                          % output_dir
+pwd_plot_folder_sep =                   '%s/SNV_depth_plot_sep'                                     % output_dir
+pwd_plot_folder_endings =               '%s/%s_endings_%sbp'                                        % (pwd_plot_folder_sep, pwd_plot_folder, ending_len_cutoff)
+pwd_plot_folder_even =                  '%s/%s_even_%s'                                             % (pwd_plot_folder_sep, pwd_plot_folder, depth_difference_cutoff)
+pwd_plot_folder_diff =                  '%s/%s_diff_%s'                                             % (pwd_plot_folder_sep, pwd_plot_folder, depth_difference_cutoff)
+pwd_plot_folder_unqualified =           '%s/%s_unqualified'                                         % (pwd_plot_folder_sep, pwd_plot_folder)
+SNV_210_mono_uniq_file =                '%s/SNV_QC_ncd_even_flk_depth_210_monoculture_uniq.txt'     % output_dir
+SNV_210_co_uniq_file =                  '%s/SNV_QC_ncd_even_flk_depth_210_coculture_uniq.txt'       % output_dir
+SNV_210_concurrence_file =              '%s/SNV_QC_ncd_even_flk_depth_210_concurrence.txt'          % output_dir
+SNV_210_matrix_file =                   '%s/SNV_QC_ncd_even_flk_depth_210_matrix.txt'               % output_dir
+SNV_D2_mono_uniq_file =                 '%s/SNV_QC_ncd_even_flk_depth_D2_monoculture_uniq.txt'      % output_dir
+SNV_D2_co_uniq_file =                   '%s/SNV_QC_ncd_even_flk_depth_D2_coculture_uniq.txt'        % output_dir
+SNV_D2_concurrence_file =               '%s/SNV_QC_ncd_even_flk_depth_D2_concurrence.txt'           % output_dir
+SNV_D2_matrix_file =                    '%s/SNV_QC_ncd_even_flk_depth_D2_matrix.txt'                % output_dir
+mutation_effect_plot_folder =           '%s/SNV_QC_ncd_even_flk_depth_frequency_plot'               % output_dir
+gene_level_output =                     '%s/SNV_QC_ncd_even_flk_depth_affected_genes.txt'           % output_dir
 
 
 ########################################## read function annotation into dict ##########################################
 
 # store annotation results in dicts
-gene_COG_cat_dict = {}
-gene_COG_id_dict = {}
-gene_COG_function_dict = {}
-for each_snv3 in open(annotation_file):
-    each_snv3_split = each_snv3.strip().split('\t')
-    gene_id = each_snv3_split[0]
-    COG_cat = each_snv3_split[10]
-    COG_id = each_snv3_split[8]
-    COG_function = each_snv3_split[9]
-    gene_COG_cat_dict[gene_id] = COG_cat
-    gene_COG_id_dict[gene_id] = COG_id
-    gene_COG_function_dict[gene_id] = COG_function
+gene_KEGG_id_dict = {}
+gene_KEGG_function_dict = {}
+for each_snv3 in open(annotation_file_KEGG):
+    if not each_snv3.startswith('Gene_id'):
+        each_snv3_split = each_snv3.strip().split('\t')
+        gene_id = each_snv3_split[0]
+        if len(each_snv3_split) > 1:
+            ko_id = each_snv3_split[4][2:]
+            ko_function = each_snv3_split[8]
+            gene_KEGG_id_dict[gene_id] = ko_id
+            gene_KEGG_function_dict[gene_id] = ko_function
+        else:
+            gene_KEGG_id_dict[gene_id] = 'NA'
+            gene_KEGG_function_dict[gene_id] = 'NA'
 
 
 ############################################## remove continuous deletion ##############################################
 
-# sort input QC file
-pwd_QC_txt_sorted =      'SNV_QC_sorted.txt'
-pwd_QC_txt_cd =          'SNV_QC_cd.txt'
-pwd_QC_txt_ncd =         'SNV_QC_ncd.txt'
-pwd_QC_txt_cd_combined = 'SNV_QC_cd_combined.txt'
-
 # sort QC file
-os.system('cat %s | sort > %s' % (pwd_QC_txt, pwd_QC_txt_sorted))
+os.system('cat %s | sort > %s' % (SNV_quality_file, pwd_QC_txt_sorted))
 
 # separate continuous deletion
 separate_continuous_deletion(pwd_QC_txt_sorted, pwd_QC_txt_cd, pwd_QC_txt_ncd)
 
 # combine continuous deletion
-#combine_continuous_deletion(pwd_QC_txt_cd, pwd_QC_txt_cd_combined)
+combined_continuous_deletions(pwd_QC_txt_cd, pwd_QC_txt_cd_combined)
 
 # delete tmp file
 os.system('rm %s' % pwd_QC_txt_sorted)
+os.system('rm %s' % pwd_QC_txt_cd)
 
 
 ##################################################### Parse SNV QC #####################################################
@@ -523,10 +686,8 @@ ref_len_dict = {}
 for each_ref in SeqIO.parse(combined_ref_fasta, 'fasta'):
     ref_len_dict[each_ref.id] = len(each_ref.seq)
 
-qualified_SNVs_even_flanking_depth_file = 'SNV_QC_ncd_even_depth.txt'
-qualified_SNVs_diff_flanking_depth_file = 'SNV_QC_ncd_diff_depth.txt'
-qualified_SNVs_even_flanking_depth_file_handle = open(qualified_SNVs_even_flanking_depth_file, 'w')
-qualified_SNVs_diff_flanking_depth_file_handle = open(qualified_SNVs_diff_flanking_depth_file, 'w')
+qualified_SNVs_even_flanking_depth_file_handle = open(qualified_SNVs_even_flk_depth_file, 'w')
+qualified_SNVs_diff_flanking_depth_file_handle = open(qualified_SNVs_diff_flk_depth_file, 'w')
 
 SNV_at_endings = []
 n_tst_total_unqualified = []
@@ -564,7 +725,6 @@ for each_snv in open(pwd_QC_txt_ncd):
 
         # get SNVs located at endings
         if (each_snv_pos <= ending_len_cutoff) or (ref_len_dict[each_snv_chr] - each_snv_pos <= ending_len_cutoff):
-            #print(ref_len_dict[each_snv_chr] - each_snv_pos)
             SNV_at_endings.append(plot_prefix)
 
         else:
@@ -612,30 +772,23 @@ qualified_SNVs_diff_flanking_depth_file_handle.close()
 
 
 # For report
-print('\n############################## report 1 ##############################')
-print('The total number of detected SNVs: %s' % total_num)
-print('The number of SNVs located at endings (within %sbp): %s' % (ending_len_cutoff, len(SNV_at_endings)))
-print('The number of SNVs with less than %s reads harboring it: %s' % (min_var_reads_num, len(n_tst_total_unqualified)))
-print('The number of SNVs with reads only from one direction: %s' % len(n_tst_each_unqualified))
-print('The number of SNVs with strand bias higher than %s: %s' % (strand_bias_cutoff, len(strand_bias_unqualified)))
-print('The number of unqualified SNVs: %s' % len(plot_prefix_unqualified))
-print('The number of qualified SNVs: %s' % len(qualified_SNVs))
-print('The number of qualified SNVs with flanking depth (%sbp) difference higher than %s: %s' % (mean_depth_len, depth_difference_cutoff, len(qualified_SNVs_diff_flanking_depth)))
-print('The number of qualified SNVs with flanking depth (%sbp) difference not higher than %s: %s' % (mean_depth_len, depth_difference_cutoff, len(qualified_SNVs_even_flanking_depth)))
-print('Details exported to %s and %s.' % (qualified_SNVs_even_flanking_depth_file, qualified_SNVs_diff_flanking_depth_file))
+print('\n########################################### Report 1 ###########################################\n')
+
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The total number of detected SNVs: %s'                                 % total_num)
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The number of SNVs located at ends (within %sbp): %s'                  % (ending_len_cutoff, len(SNV_at_endings)))
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The number of SNVs with less than %s reads harboring it: %s'           % (min_var_reads_num, len(n_tst_total_unqualified)))
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The number of SNVs with reads only from one direction: %s'             % len(n_tst_each_unqualified))
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The number of SNVs with strand bias higher than %s: %s'                % (strand_bias_cutoff, len(strand_bias_unqualified)))
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The number of unqualified SNVs: %s'                                    % len(plot_prefix_unqualified))
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The number of qualified SNVs: %s'                                      % len(qualified_SNVs))
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The number of qualified SNVs with flk depth (%sbp) diff >  %s%s: %s'   % (mean_depth_len, depth_difference_cutoff, '%', len(qualified_SNVs_diff_flanking_depth)))
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The number of qualified SNVs with flk depth (%sbp) diff <= %s%s: %s'   % (mean_depth_len, depth_difference_cutoff, '%', len(qualified_SNVs_even_flanking_depth)))
 
 
-################################ separate plots according to provided difference cutoff ################################
+############################# separate depth plots according to provided difference cutoff #############################
 
 # separate plot files
 if separate_plot == 1:
-
-    pwd_plot_folder = 'SNV_depth_plot'
-    pwd_plot_folder_sep = 'SNV_depth_plot_sep'
-    pwd_plot_folder_endings =       '%s/%s_endings_%sbp'   % (pwd_plot_folder_sep, pwd_plot_folder, ending_len_cutoff)
-    pwd_plot_folder_even =          '%s/%s_even_%s'        % (pwd_plot_folder_sep, pwd_plot_folder, depth_difference_cutoff)
-    pwd_plot_folder_diff =          '%s/%s_diff_%s'        % (pwd_plot_folder_sep, pwd_plot_folder, depth_difference_cutoff)
-    pwd_plot_folder_unqualified =   '%s/%s_unqualified'    % (pwd_plot_folder_sep, pwd_plot_folder)
 
     # prepare folder
     if os.path.isdir(pwd_plot_folder_sep):
@@ -674,20 +827,14 @@ if separate_plot == 1:
         os.system(cmd)
 
 
-############################################# combine continuous deletion ##############################################
-
-#combine_continuous_deletion(qualified_SNVs_even_flanking_depth_file, qualified_SNVs_even_flanking_depth_file_cdc)
-#combine_continuous_deletion(qualified_SNVs_diff_flanking_depth_file, qualified_SNVs_diff_flanking_depth_file_cdc)
-
-
 ####################################### compare between Monoculture and Coculture ######################################
 
 mono_210_SNV_list = []
-co_210_SNV_list = []
 mono_D2_SNV_list = []
+co_210_SNV_list = []
 co_D2_SNV_list = []
 total_SNV = 0
-for each_SNV in open(qualified_SNVs_even_flanking_depth_file):
+for each_SNV in open(qualified_SNVs_even_flk_depth_file):
     each_SNV_split = each_SNV.strip().split(',')
     treatment_id = each_SNV_split[0].split('D')[0]
     strain = each_SNV_split[1].split('_')[0]
@@ -695,13 +842,10 @@ for each_SNV in open(qualified_SNVs_even_flanking_depth_file):
 
     if (strain == '2.10') and (treatment_id in ['1', '5', '9']):
         mono_210_SNV_list.append(SNV_id)
-
     elif (strain == '2.10') and (treatment_id in ['4', '8', '12']):
         co_210_SNV_list.append(SNV_id)
-
     elif (strain == 'D2') and (treatment_id in ['2', '6', '10']):
         mono_D2_SNV_list.append(SNV_id)
-
     elif (strain == 'D2') and (treatment_id in ['4', '8', '12']):
         co_D2_SNV_list.append(SNV_id)
 
@@ -727,95 +871,28 @@ SNV_D2_co_uniq = remove_l2_elements_from_l1(co_D2_SNV_list, SNV_D2_concurrence)
 total_210 = len(SNV_210_concurrence) + len(SNV_210_mono_uniq) + len(SNV_210_co_uniq)
 total_D2 = len(SNV_D2_concurrence) + len(SNV_D2_mono_uniq) + len(SNV_D2_co_uniq)
 
-
-# For report
-print('\n############################## report 2 ##############################')
-print('Qualified SNVs (even depth) in total: %s' % total_SNV)
-print('Qualified 2.10 SNVs: %s' % total_210)
-print('Qualified D2 SNVs: %s' % total_D2)
-print()
-print('Qualified 2.10 SNVs uniq to monoculture: %s (%s' % (len(SNV_210_mono_uniq), float("{0:.1f}".format(len(SNV_210_mono_uniq)/total_210 * 100))) + '%)')
-print('Qualified 2.10 SNVs uniq to coculture: %s (%s' % (len(SNV_210_co_uniq), float("{0:.1f}".format(len(SNV_210_co_uniq)/total_210 * 100))) + '%)')
-print('Qualified 2.10 SNVs concurrent in both: %s (%s' % (len(SNV_210_concurrence), float("{0:.1f}".format(len(SNV_210_concurrence)/total_210 * 100))) + '%)')
-print()
-print('Qualified D2 SNVs uniq to monoculture: %s (%s' % (len(SNV_D2_mono_uniq), float("{0:.1f}".format(len(SNV_D2_mono_uniq)/total_D2 * 100))) + '%)')
-print('Qualified D2 SNVs uniq to coculture: %s (%s' % (len(SNV_D2_co_uniq), float("{0:.1f}".format(len(SNV_D2_co_uniq)/total_D2 * 100))) + '%)')
-print('Qualified D2 SNVs concurrent in both: %s (%s' % (len(SNV_D2_concurrence), float("{0:.1f}".format(len(SNV_D2_concurrence)/total_D2 * 100))) + '%)')
-
-
-# export SNVs to file
-#output_file_path = '/Users/songweizhi/Dropbox/Research/Flow_cell_datasets/Monoculture_VS_Coculture'
-
-SNV_210_mono_uniq_file =   'SNV_ncd_210_mono_uniq.txt'
-SNV_210_co_uniq_file =     'SNV_ncd_210_co_uniq.txt'
-SNV_210_concurrence_file = 'SNV_ncd_210_concurrence.txt'
-SNV_D2_mono_uniq_file =    'SNV_ncd_D2_mono_uniq.txt'
-SNV_D2_co_uniq_file =      'SNV_ncd_D2_co_uniq.txt'
-SNV_D2_concurrence_file =  'SNV_ncd_D2_concurrence.txt'
-
-
 # write out
-write_out(SNV_210_mono_uniq_file, SNV_210_mono_uniq)
-write_out(SNV_210_co_uniq_file, SNV_210_co_uniq)
-write_out(SNV_210_concurrence_file, SNV_210_concurrence)
-write_out(SNV_D2_mono_uniq_file, SNV_D2_mono_uniq)
-write_out(SNV_D2_co_uniq_file, SNV_D2_co_uniq)
-write_out(SNV_D2_concurrence_file, SNV_D2_concurrence)
-
-
-# store annotation results in dicts
-gene_COG_id_dict = {}
-gene_COG_function_dict = {}
-for each_snv3 in open(annotation_file):
-    each_snv3_split = each_snv3.strip().split('\t')
-    gene_id = each_snv3_split[0]
-    COG_cat = each_snv3_split[10]
-    COG_id = each_snv3_split[8]
-    COG_function = each_snv3_split[9]
-    gene_COG_id_dict[gene_id] = COG_id
-    gene_COG_function_dict[gene_id] = COG_function
+write_out(SNV_210_mono_uniq,    SNV_210_mono_uniq_file)
+write_out(SNV_210_co_uniq,      SNV_210_co_uniq_file)
+write_out(SNV_210_concurrence,  SNV_210_concurrence_file)
+write_out(SNV_D2_mono_uniq,     SNV_D2_mono_uniq_file)
+write_out(SNV_D2_co_uniq,       SNV_D2_co_uniq_file)
+write_out(SNV_D2_concurrence,   SNV_D2_concurrence_file)
 
 
 ###################################################### get matrix ######################################################
 
-# for report
-print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Get matrix')
-
-# file in:
-# SNV_QC_ncd_even_depth.txt
-
-# file out:
-# SNV_QC_ncd_even_depth_matrix_210.txt
-# SNV_QC_ncd_even_depth_matrix_D2.txt
-
-qualified_SNVs_even_flanking_depth_file_basename, qualified_SNVs_even_flanking_depth_file_ext = os.path.splitext(qualified_SNVs_even_flanking_depth_file)
-SNV_file_out_210 = '%s_matrix_210.txt' % qualified_SNVs_even_flanking_depth_file_basename
-SNV_file_out_D2 = '%s_matrix_D2.txt' % qualified_SNVs_even_flanking_depth_file_basename
-
-get_matrix(qualified_SNVs_even_flanking_depth_file, SNV_file_out_210, SNV_file_out_D2)
-
-
-################################################# get mutation effect ##################################################
-
-# for report
-print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Get mutation effect')
-
-# plot mutation effect and get the dict
-SNV_mutation_effect_dict_210 = get_mutation_effect(SNV_file_out_210, plot_effect)
-SNV_mutation_effect_dict_D2 = get_mutation_effect(SNV_file_out_D2, plot_effect)
-
-# merge two dict
-SNV_mutation_effect_combined = merge_two_dict(SNV_mutation_effect_dict_210, SNV_mutation_effect_dict_D2)
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' Get matrix')
+get_matrix(qualified_SNVs_even_flk_depth_file, SNV_210_matrix_file, SNV_D2_matrix_file)
 
 
 #################################################### check parallel ####################################################
 
-# for report
-print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Check parallel')
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' Check parallel')
 
 # get SNV_parallel_dict
-SNV_parallel_dict_210 = check_parallel(SNV_file_out_210)
-SNV_parallel_dict_D2 = check_parallel(SNV_file_out_D2)
+SNV_parallel_dict_210 = check_parallel(SNV_210_matrix_file)
+SNV_parallel_dict_D2  = check_parallel(SNV_D2_matrix_file)
 
 # merge two dict
 SNV_parallel_dict_combined = merge_two_dict(SNV_parallel_dict_210, SNV_parallel_dict_D2)
@@ -825,18 +902,20 @@ SNV_parallel_dict_combined = merge_two_dict(SNV_parallel_dict_210, SNV_parallel_
 
 SNV_matrix_cdc_list = [SNV_210_mono_uniq_file, SNV_210_co_uniq_file, SNV_210_concurrence_file, SNV_D2_mono_uniq_file, SNV_D2_co_uniq_file, SNV_D2_concurrence_file]
 
-print('\n############################## report 3 ##############################')
-
+SNV_to_gene_dict = {}
+SNV_to_ko_id_dict = {}
+SNV_to_ko_desc_dict = {}
 for SNV_matrix_cdc in SNV_matrix_cdc_list:
 
     # output files
     SNV_matrix_cdc_path, SNV_matrix_cdc_basename, SNV_matrix_cdc_ext = sep_path_basename_ext(SNV_matrix_cdc)
-    output_mutated_genes_cate = '%s_mutated_genes_category.txt' % SNV_matrix_cdc_basename
-    output_mutated_genes_cate_fun = '%s_mutated_genes_cate_fun.txt' % SNV_matrix_cdc_basename
-    output_summary = '%s_summary.txt' % SNV_matrix_cdc_basename
-    effect_file = '%s_mutation_effect.txt' % SNV_matrix_cdc_basename
-    output_seq_nc = '%s_mutated_genes_nc.fasta' % SNV_matrix_cdc_basename
-    output_seq_aa = '%s_mutated_genes_aa.fasta' % SNV_matrix_cdc_basename
+
+    output_mutated_genes_cate =         '%s/%s_mutated_genes_category.txt'     % (output_dir, SNV_matrix_cdc_basename)
+    output_mutated_genes_cate_fun =     '%s/%s_mutated_genes_cate_fun.txt'     % (output_dir, SNV_matrix_cdc_basename)
+    output_summary =                    '%s/%s_summary.txt'                    % (output_dir, SNV_matrix_cdc_basename)
+    effect_file =                       '%s/%s_mutation_effect.txt'            % (output_dir, SNV_matrix_cdc_basename)
+    output_seq_nc =                     '%s/%s_mutated_genes_nc.fasta'         % (output_dir, SNV_matrix_cdc_basename)
+    output_seq_aa =                     '%s/%s_mutated_genes_aa.fasta'         % (output_dir, SNV_matrix_cdc_basename)
 
     # store sequences in dict
     ref_seq_dict = {}
@@ -886,13 +965,11 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
     output_handle = open(output_summary, 'w')
     for each_snv in open(SNV_matrix_cdc):
         if not each_snv.startswith('\t'):
+            each_snv_id =  each_snv.strip().split('\t')[0]
             each_snv_seq = each_snv.strip().split(',')[0].split('|')[0]
-            each_snv_pos = each_snv.strip().split(',')[0].split('|')[1]
+            each_snv_pos = int(each_snv.strip().split(',')[0].split('|')[1])
             each_snv_pos_wt = each_snv.strip().split(',')[0].split('|')[2]
             each_snv_pos_v = each_snv.strip().split(',')[0].split('|')[3]
-
-            # get all affected genes for
-            each_snv_pos = int(each_snv_pos)
 
             # get SNV location
             location = ''
@@ -900,10 +977,12 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
                 location = 'Coding'
             else:
                 location = 'Intergenic'
-                output_handle.write('%s\t%s\t%s\tNA\tNA\tNA\tNA\t%s\tNA\tNA\n' % (each_snv.strip().split('\t')[0],
-                                                                                  SNV_parallel_dict_combined[each_snv.strip()],
-                                                                                  location,
-                                                                                  SNV_mutation_effect_combined[each_snv.strip()]))
+                output_handle.write('%s\t%s\t%s\tNA\tNA\tNA\tNA\tNA\tNA\n' % (each_snv_id,
+                                                                              SNV_parallel_dict_combined[each_snv.strip()],
+                                                                              location))
+                SNV_to_gene_dict[each_snv_id]    = 'Intergenic'
+                SNV_to_ko_id_dict[each_snv_id]   = 'NA'
+                SNV_to_ko_desc_dict[each_snv_id] = 'NA'
 
             # get current gene's COG ID, description, mutation type and mutation effect
             if location == 'Coding':
@@ -921,9 +1000,9 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
                         # get current gene's COG ID and description
                         current_COG_id = ''
                         current_COG_function = ''
-                        if each_gene in gene_COG_id_dict:
-                            current_COG_id = gene_COG_id_dict[each_gene]
-                            current_COG_function = gene_COG_function_dict[each_gene]
+                        if each_gene in gene_KEGG_id_dict:
+                            current_COG_id = gene_KEGG_id_dict[each_gene]
+                            current_COG_function = gene_KEGG_function_dict[each_gene]
                         else:
                             current_COG_id = 'NA'
                             current_COG_function = 'NA'
@@ -931,15 +1010,18 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
                         # get current gene's mutation type
                         if each_snv_pos_v == '-':
                             mutation_type = 'Frameshift'
-                            output_handle.write('%s\t%s\t%s\t%s\t%s\tNA\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0],
-                                                                                              SNV_parallel_dict_combined[each_snv.strip()],
-                                                                                              location,
-                                                                                              ORF_strand_dict[each_gene],
-                                                                                              each_gene,
-                                                                                              mutation_type,
-                                                                                              SNV_mutation_effect_combined[each_snv.strip()],
-                                                                                              gene_COG_id_dict[each_gene],
-                                                                                              gene_COG_function_dict[each_gene]))
+                            output_handle.write('%s\t%s\t%s\t%s\t%s\tNA\t%s\t%s\t%s\n' % (each_snv_id,
+                                                                                          SNV_parallel_dict_combined[each_snv.strip()],
+                                                                                          location,
+                                                                                          ORF_strand_dict[each_gene],
+                                                                                          each_gene,
+                                                                                          mutation_type,
+                                                                                          gene_KEGG_id_dict[each_gene],
+                                                                                          gene_KEGG_function_dict[each_gene]))
+                            SNV_to_gene_dict[each_snv_id]    = each_gene
+                            SNV_to_ko_id_dict[each_snv_id]   = gene_KEGG_id_dict[each_gene]
+                            SNV_to_ko_desc_dict[each_snv_id] = gene_KEGG_function_dict[each_gene]
+
                         elif each_snv_pos_v in ['A', 'T', 'C', 'G']:
 
                             # get all reading frame
@@ -985,151 +1067,119 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
                             aa_mutation = '%s(%s)->%s(%s)' % (rf_seq_raw, rf_seq_raw_aa, rf_seq_mutated, rf_seq_mutated_aa)
 
                             # print out
-                            for_write = '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv.strip().split('\t')[0],
-                                                                                      SNV_parallel_dict_combined[each_snv.strip()],
-                                                                                      location,
-                                                                                      ORF_strand_dict[each_gene],
-                                                                                      each_gene,
-                                                                                      aa_mutation,
-                                                                                      mutation_type_term,
-                                                                                      SNV_mutation_effect_combined[each_snv.strip()],
-                                                                                      gene_COG_id_dict[each_gene],
-                                                                                      gene_COG_function_dict[each_gene])
+                            for_write = '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % (each_snv_id,
+                                                                                  SNV_parallel_dict_combined[each_snv.strip()],
+                                                                                  location,
+                                                                                  ORF_strand_dict[each_gene],
+                                                                                  each_gene,
+                                                                                  aa_mutation,
+                                                                                  mutation_type_term,
+                                                                                  gene_KEGG_id_dict[each_gene],
+                                                                                  gene_KEGG_function_dict[each_gene])
+                            SNV_to_gene_dict[each_snv_id]    = each_gene
+                            SNV_to_ko_id_dict[each_snv_id]   = gene_KEGG_id_dict[each_gene]
+                            SNV_to_ko_desc_dict[each_snv_id] = gene_KEGG_function_dict[each_gene]
+
                             output_handle.write(for_write)
     output_handle.close()
 
     # get mutation_cate_summary
     mutation_cate_dict = get_mutation_cate_summary(output_summary, output_mutated_genes_cate)
-
-    # report
-    print('The number of affected genes for %s: %s' % (SNV_matrix_cdc, len(mutation_cate_dict)))
+    #os.system('rm %s' % output_mutated_genes_cate)
 
 
     ################################################### export sequences ###################################################
 
-    # get the sequence of affected genes
-    output_seq_nc_handle = open(output_seq_nc, 'w')
-    for each_gene_nc in SeqIO.parse(combined_ref_ffn, 'fasta'):
-        if each_gene_nc.id in mutation_cate_dict:
-            SeqIO.write(each_gene_nc, output_seq_nc_handle, 'fasta')
-    output_seq_nc_handle.close()
+    # # get the sequence of affected genes
+    # output_seq_nc_handle = open(output_seq_nc, 'w')
+    # for each_gene_nc in SeqIO.parse(combined_ref_ffn, 'fasta'):
+    #     if each_gene_nc.id in mutation_cate_dict:
+    #         SeqIO.write(each_gene_nc, output_seq_nc_handle, 'fasta')
+    # output_seq_nc_handle.close()
+    #
+    # output_seq_aa_handle = open(output_seq_aa, 'w')
+    # for each_gene_aa in SeqIO.parse(combined_ref_faa, 'fasta'):
+    #     if each_gene_aa.id in mutation_cate_dict:
+    #         SeqIO.write(each_gene_aa, output_seq_aa_handle, 'fasta')
+    # output_seq_aa_handle.close()
 
-    output_seq_aa_handle = open(output_seq_aa, 'w')
-    for each_gene_aa in SeqIO.parse(combined_ref_faa, 'fasta'):
-        if each_gene_aa.id in mutation_cate_dict:
-            SeqIO.write(each_gene_aa, output_seq_aa_handle, 'fasta')
-    output_seq_aa_handle.close()
+
+############################################## get summary at gene level ###############################################
+
+# get_file name list
+gene_level_output_handle = open(gene_level_output, 'w')
+for each_strain in ['210', 'D2']:
+    affected_gene_concurrence_dict = {}
+    affected_gene_uniq_list = []
+    for each_parallel_cate in ['monoculture_uniq', 'coculture_uniq', 'concurrence']:
+
+        # parse summary file
+        summary_filename = '%s/SNV_QC_ncd_even_flk_depth_%s_%s_summary.txt' % (output_dir, each_strain, each_parallel_cate)
+        for each_SNV in open(summary_filename):
+            each_SNV_split = each_SNV.strip().split('\t')
+            SNV_id = each_SNV_split[0]
+            SNV_parallel_cate = each_SNV_split[1][-8:-1]
+            affected_gene_id = each_SNV_split[4]
+
+            if affected_gene_id != 'NA':
+
+                if affected_gene_id not in affected_gene_concurrence_dict:
+                    affected_gene_concurrence_dict[affected_gene_id] = [SNV_parallel_cate]
+                else:
+                    affected_gene_concurrence_dict[affected_gene_id].append(SNV_parallel_cate)
+
+                # add to current strain affected_gene_uniq_list
+                if affected_gene_id not in affected_gene_uniq_list:
+                    affected_gene_uniq_list.append(affected_gene_id)
+
+    for each_affected_gene in affected_gene_concurrence_dict:
+        six_digit_1_sum = 0
+        six_digit_2_sum = 0
+        six_digit_3_sum = 0
+        six_digit_4_sum = 0
+        six_digit_5_sum = 0
+        six_digit_6_sum = 0
+        for each_six_digit in affected_gene_concurrence_dict[each_affected_gene]:
+            six_digit_1_sum += int(each_six_digit[0])
+            six_digit_2_sum += int(each_six_digit[1])
+            six_digit_3_sum += int(each_six_digit[2])
+            six_digit_4_sum += int(each_six_digit[4])
+            six_digit_5_sum += int(each_six_digit[5])
+            six_digit_6_sum += int(each_six_digit[6])
+
+        six_digit_sum = '%s%s%s_%s%s%s(%s)' % (six_digit_1_sum, six_digit_2_sum, six_digit_3_sum, six_digit_4_sum, six_digit_5_sum, six_digit_6_sum, len(affected_gene_concurrence_dict[each_affected_gene]))
+
+        # get report for each gene
+        for_report = ''
+        if six_digit_sum[0:3] == '000':
+            for_report = '%s\t%s\tco\t%s\t%s\n' % (each_affected_gene, six_digit_sum, gene_KEGG_id_dict[each_affected_gene], gene_KEGG_function_dict[each_affected_gene])
+        elif six_digit_sum[4:7] == '000':
+            for_report = '%s\t%s\tmono\t%s\t%s\n' % (each_affected_gene, six_digit_sum, gene_KEGG_id_dict[each_affected_gene], gene_KEGG_function_dict[each_affected_gene])
+        elif (six_digit_sum[0:3] != '000') and (six_digit_sum[4:7] != '000'):
+            for_report = '%s\t%s\tboth\t%s\t%s\n' % (each_affected_gene, six_digit_sum, gene_KEGG_id_dict[each_affected_gene], gene_KEGG_function_dict[each_affected_gene])
+
+        # write out
+        gene_level_output_handle.write(for_report)
+
+    # print the report
+    print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The total number of %s affected gene (ncd_even_depth): %s' % (each_strain, len(affected_gene_uniq_list)))
+
+gene_level_output_handle.close()
+
+# for report
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' Summaries at gene level exported to %s' % gene_level_output)
 
 
-# ########################################################################################################################
-# ##################################################### at gene level ####################################################
-# ########################################################################################################################
-#
-# print('\n############################## report 4 ##############################')
-# strain_list = ['210', 'D2']
-# for strain in strain_list:
-#
-#     # output file
-#     output_mutated_genes = 'mutated_genes_%s.txt' % strain
-#     output_mutated_genes_handle = open(output_mutated_genes, 'w')
-#
-#     all_affected_gene_list = []
-#     gene_occurence_dict = {}
-#     gene_occurence_count_dict = {}
-#
-#     for each_gene in open('SNV_ncd_%s_co_uniq_summary.txt' % strain):
-#         gene_id = each_gene.split('\t')[4]
-#         if gene_id != 'NA':
-#
-#             if gene_id not in all_affected_gene_list:
-#                 all_affected_gene_list.append(gene_id)
-#
-#             if gene_id not in gene_occurence_count_dict:
-#                 gene_occurence_count_dict[gene_id] = 1
-#             else:
-#                 gene_occurence_count_dict[gene_id] += 1
-#             if gene_id not in gene_occurence_dict:
-#                 gene_occurence_dict[gene_id] = ['co']
-#
-#     for each_gene in open('SNV_ncd_%s_mono_uniq_summary.txt' % strain):
-#         gene_id = each_gene.split('\t')[4]
-#         if gene_id != 'NA':
-#
-#             if gene_id not in all_affected_gene_list:
-#                 all_affected_gene_list.append(gene_id)
-#
-#             if gene_id not in gene_occurence_count_dict:
-#                 gene_occurence_count_dict[gene_id] = 1
-#             else:
-#                 gene_occurence_count_dict[gene_id] += 1
-#             if gene_id not in gene_occurence_dict:
-#                 gene_occurence_dict[gene_id] = ['mono']
-#             else:
-#                 if 'mono' not in gene_occurence_dict[gene_id]:
-#                     gene_occurence_dict[gene_id].append('mono')
-#
-#     for each_gene in open('SNV_ncd_%s_concurrence_summary.txt' % strain):
-#         gene_id = each_gene.split('\t')[4]
-#         if gene_id != 'NA':
-#
-#             if gene_id not in all_affected_gene_list:
-#                 all_affected_gene_list.append(gene_id)
-#
-#             if gene_id not in gene_occurence_count_dict:
-#                 gene_occurence_count_dict[gene_id] = 1
-#             else:
-#                 gene_occurence_count_dict[gene_id] += 1
-#             if gene_id not in gene_occurence_dict:
-#                 gene_occurence_dict[gene_id] = ['both']
-#             else:
-#                 if 'both' not in gene_occurence_dict[gene_id]:
-#                     gene_occurence_dict[gene_id].append('both')
-#
-#     mutated_gene_nomo_uniq = 0
-#     mutated_gene_co_uniq = 0
-#     mutated_gene_concurrence = 0
-#     for each_mutated_gene in gene_occurence_dict:
-#         if gene_occurence_dict[each_mutated_gene] == ['mono']:
-#             mutated_gene_nomo_uniq += 1
-#         elif gene_occurence_dict[each_mutated_gene] == ['co']:
-#             mutated_gene_co_uniq += 1
-#         else:
-#             mutated_gene_concurrence += 1
-#
-#     # for report:
-#     print('The number of mutated %s gene uniq to monoculture: %s' % (strain, mutated_gene_nomo_uniq))
-#     print('The number of mutated %s gene uniq to coculture: %s' % (strain, mutated_gene_co_uniq))
-#     print('The number of mutated %s gene with concurrence: %s' % (strain, mutated_gene_concurrence))
-#     print('Details exported to %s\n' % output_mutated_genes)
-#
-#     # write out
-#     for each_affected_gene in all_affected_gene_list:
-#
-#         existence = ''
-#         existence_profile = gene_occurence_dict[each_affected_gene]
-#         if len(existence_profile) == 1:
-#             if existence_profile == ['mono']:
-#                 existence = 'mono'
-#             elif existence_profile == ['co']:
-#                 existence = 'co'
-#             elif existence_profile == ['both']:
-#                 existence = 'both'
-#         elif len(existence_profile) > 1:
-#             existence = 'both'
-#
-#         current_COG_id2 = ''
-#         current_COG_function2 = ''
-#         if each_affected_gene in gene_COG_id_dict:
-#             current_COG_id2 = gene_COG_id_dict[each_affected_gene]
-#             current_COG_function2 = gene_COG_function_dict[each_affected_gene]
-#         else:
-#             current_COG_id2 = 'NA'
-#             current_COG_function2 = 'NA'
-#
-#         for_report = '%s\t%s\t%s\t%s\t%s\n' % (each_affected_gene, existence, gene_occurence_count_dict[each_affected_gene], current_COG_id2, current_COG_function2)
-#         output_mutated_genes_handle.write(for_report)
-#
-#     output_mutated_genes_handle.close()
+################################################# plot SNV frequency ###################################################
+
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' plot SNV frequency')
+
+if plot_snv_freq is True:
+
+    force_create_folder(mutation_effect_plot_folder)
+
+    plot_freq(SNV_210_matrix_file, mutation_effect_plot_folder, SNV_to_gene_dict, SNV_to_ko_id_dict, SNV_to_ko_desc_dict)
+    plot_freq(SNV_D2_matrix_file, mutation_effect_plot_folder, SNV_to_gene_dict, SNV_to_ko_id_dict, SNV_to_ko_desc_dict)
 
 
 ################################################ remove temporary files ################################################
@@ -1143,7 +1193,14 @@ os.system('rm %s' % SNV_D2_co_uniq_file)
 os.system('rm %s' % SNV_D2_concurrence_file)
 
 
+################################################ run PERMANOVA ################################################
+
+if permanova == 1:
+
+    # for report
+    print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' Running PERMANOVA')
 
 
+print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' Done!')
 
-
+print('\n################################################################################################')

@@ -36,11 +36,11 @@ def get_mates_of_reads_mapped_to_a_region(sam_file, seq_id, start_pos, end_pos):
 
 sam_file = '/Users/songweizhi/Desktop/pysam_test/ref_seq.bam'
 
-mapped_read_list = get_reads_mapped_to_a_region(sam_file, 'ref_seq', 278, 281)
+mapped_read_list = get_reads_mapped_to_a_region(sam_file, 'ref_seq', 43, 44)
 print(mapped_read_list)
 
 
-get_mates_of_reads_mapped_to_a_region(sam_file, 'ref_seq', 278, 281)
+get_mates_of_reads_mapped_to_a_region(sam_file, 'ref_seq', 43, 44)
 
 
 

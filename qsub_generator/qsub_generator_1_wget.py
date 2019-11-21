@@ -11,13 +11,11 @@ walltime_needed = '11:59:00'
 email = 'wythe1987@163.com'
 modules_needed = []
 
-wd = '/Users/songweizhi/Desktop'
-outputs_folder = 'qsub_wget2'
+outputs_folder = '/Users/songweizhi/Desktop/qsub_wget2'
 wd_on_katana = '/srv/scratch/z5039045/HK_banknote/raw_reads'
 
 ###########################################################################################
 
-os.chdir(wd)
 
 # create outputs folder
 if not os.path.exists(outputs_folder):
@@ -41,9 +39,6 @@ module_lines = ''
 for module in modules_needed:
     module_lines += 'module load ' + module + '\n'
 
-
-#print(header)
-#print(module_lines)
 
 ################################################################
 

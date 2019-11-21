@@ -83,7 +83,6 @@ for each_depth in open(depth_summary):
     subsample_ratio_dict[each_depth_id] = subsample_ratio
 
 
-
 sample_list_mono_210 = ['1D18', '1D27', '1D42', '1D9', '5D18', '5D27', '5D42', '5D9', '9D18', '9D27', '9D42', '9D9', '210WTD0']
 sample_list_mono_D2 = ['2D18', '2D27', '2D42', '2D9', '6D18', '6D27', '6D42', '6D9', '10D18', '10D27', '10D42', '10D9', 'D2D0']
 sample_list_co = ['4D18', '4D27', '4D42', '4D9', '8D18', '8D27', '8D42', '8D9', '12D18', '12D27', '12D42', '12D9', 'coculture_D0']
@@ -101,7 +100,6 @@ for sample_mono_210 in sample_list_mono_210:
     qsub_file_mono_210_handle.write('cd %s\n' % wd_on_katana)
     qsub_file_mono_210_handle.write(subsample_cmd_mono_210)
     qsub_file_mono_210_handle.close()
-
 
 
 for sample_mono_D2 in sample_list_mono_D2:
@@ -188,6 +186,5 @@ for sample_co in sample_list_co:
     qsub_file_co_handle.write('rm %s_D2.bam\n' % sample_co)
     qsub_file_co_handle.write('rm subsampled_%s_2.10.bam\n' % sample_co)
     qsub_file_co_handle.write('rm subsampled_%s_D2.bam\n' % sample_co)
-
     qsub_file_co_handle.close()
 

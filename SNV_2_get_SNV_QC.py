@@ -167,12 +167,12 @@ required = parser.add_argument_group('required arguments')
 optional = parser.add_argument_group('optional arguments')
 
 optional.add_argument('-h', action='help', help='Show this help message and exit')
-required.add_argument('-snv', dest='SNV', nargs='?', required=True,  type=str, help='deepSNV output folder')
-required.add_argument('-depth', dest='DEPTH', nargs='?', required=True,  type=str, help='depth file folder')
-required.add_argument('-ref', dest='REF', nargs='?', required=True, type=str, help='reference genome folder')
-required.add_argument('-flklen', dest='FLKLEN', nargs='?', required=True, type=int, help='flanking length to plot')
-required.add_argument('-kmer', dest='KMER', nargs='?', required=True, type=int, help='Kmer for plotting depth')
-required.add_argument('-deplen', dest='DEPLEN', nargs='?', required=True, type=int, help='flanking length for mean depth calculation')
+required.add_argument('-snv',       dest='SNV',     nargs='?', required=True, type=str, help='deepSNV output folder')
+required.add_argument('-depth',     dest='DEPTH',   nargs='?', required=True, type=str, help='depth file folder')
+required.add_argument('-ref',       dest='REF',     nargs='?', required=True, type=str, help='reference genome folder')
+required.add_argument('-flklen',    dest='FLKLEN',  nargs='?', required=True, type=int, help='flanking length to plot')
+required.add_argument('-kmer',      dest='KMER',    nargs='?', required=True, type=int, help='Kmer for plotting depth')
+required.add_argument('-deplen',    dest='DEPLEN',  nargs='?', required=True, type=int, help='flanking length for mean depth calculation')
 
 args = vars(parser.parse_args())
 deepSNV_output_folder = args['SNV']
@@ -235,6 +235,7 @@ deepSNV_output_combined_handle.close()
 
 
 ########################################## quality filtering of detected SNVs ##########################################
+
 print('Quality assessment of detected SNVs')
 snv_num_overall = 0
 deepSNV_output_combined_QC_handle = open(pwd_deepSNV_output_combined_QC, 'w')

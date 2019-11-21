@@ -5,7 +5,7 @@ from Bio import SeqIO
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
-
+from matplotlib.pyplot import figure
 
 def take_kmer_mean(num_list, k_mer):
 
@@ -97,6 +97,8 @@ def plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, p
     #print('Calculating k-mer means')
     y = take_kmer_mean(y, k_mer)
 
+    fig = plt.figure(figsize=(plot_width, plot_height), dpi=100)
+
     # Change the color and its transparency
     plt.plot(x, y, color="skyblue", alpha=0.7, linewidth=0.7)
 
@@ -109,7 +111,9 @@ def plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, p
     plt.yticks(fontsize=7)
 
     ymax = 0
-    if max(y) <= 5000:
+    if max(y) <= 2000:
+        ymax = 2000
+    elif (2000 < max(y) <= 5000):
         ymax = 5000
     elif (5000 < max(y) <= 10000):
         ymax = 10000
@@ -144,7 +148,8 @@ optional.add_argument('-e', dest='END', nargs='?', required=False, type=int, def
 optional.add_argument('-k', dest='Kmer', nargs='?', required=False, type=int, default=100, help='k-mer mean depth')
 optional.add_argument('-o', dest='Out', nargs='?', required=False, type=str, default=None, help='output plot name')
 optional.add_argument('-l', dest='Lines', nargs='?', required=False, type=str, default=None, help='output plot name')
-
+optional.add_argument('-x', dest='xlen', nargs='?', required=False, type=int, default=8, help='plot width')
+optional.add_argument('-y', dest='ylen', nargs='?', required=False, type=int, default=3, help='plot height')
 
 args = vars(parser.parse_args())
 sequence_file = args['REF']
@@ -155,6 +160,8 @@ end_pos = args['END']
 k_mer = args['Kmer']
 plot_filename = args['Out']
 bps_to_marker = args['Lines']
+plot_width = args['xlen']
+plot_height = args['ylen']
 
 #########################################################################################################
 
@@ -164,7 +171,7 @@ for each_seq in SeqIO.parse(sequence_file, 'fasta'):
     seq_id_length_dict[each_seq.id] = len(each_seq.seq)
 
 
-if seq_to_plot not in seq_id_length_dict:
+if (seq_to_plot != None) and (seq_to_plot not in seq_id_length_dict):
     print('Reference sequence %s not found in bam file, program exited!' % seq_to_plot)
     exit()
 
@@ -184,12 +191,11 @@ if seq_to_plot != None:
     print('Processing %s' % seq_to_plot)
     if plot_filename == None:
         plot_filename = '%s__%s__%s-%sbp__%smer' % (depth_file_basename, seq_to_plot, start_pos, end_pos, k_mer)
-    plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, plot_filename)
+        plot_sam_depth(depth_file, seq_to_plot, start_pos, end_pos, bps_to_marker, plot_filename)
 
 if seq_to_plot == None:
 
     for each_ctg in SeqIO.parse(sequence_file, 'fasta'):
         print('Processing %s' % each_ctg.id)
-        if plot_filename == None:
-            plot_filename = '%s__%s__%s-%sbp__%smer' % (depth_file_basename, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], k_mer)
+        plot_filename = '%s__%s__%s-%sbp__%smer' % (depth_file_basename, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], k_mer)
         plot_sam_depth(depth_file, each_ctg.id, 1, seq_id_length_dict[each_ctg.id], bps_to_marker, plot_filename)

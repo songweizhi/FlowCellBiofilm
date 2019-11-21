@@ -2,7 +2,7 @@ import os
 
 
 #wd = '/Users/songweizhi/Dropbox/Research/Flow_cell/deepSNV_output_summary'
-wd = '/Users/songweizhi/Desktop/aaa'
+wd = '/Users/songweizhi/Desktop/Permanova'
 
 timepoint_list = ['D9', 'D18', 'D27', 'D42']
 
