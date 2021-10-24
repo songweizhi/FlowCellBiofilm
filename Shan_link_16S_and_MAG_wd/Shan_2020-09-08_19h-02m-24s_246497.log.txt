@@ -1,0 +1,8 @@
+[2020-09-08 19:02:24] Mapping reads to marker gene sequences
+[2020-09-08 19:02:47] Extract reads
+[2020-09-08 19:03:23] Run blast
+[2020-09-08 19:03:27] Parse blast results for paired reads
+[2020-09-08 19:03:27] Parse blast results for clipping mapped reads
+[2020-09-08 19:03:27] Plot
+[2020-09-08 19:03:31] Remove tmp files
+[2020-09-08 19:03:31] Done

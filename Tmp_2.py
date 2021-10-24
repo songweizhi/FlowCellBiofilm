@@ -1,60 +1,23 @@
 
 
+def blast_results_to_dict(blastn_results, iden_cutoff, query_cov_cutoff):
 
+    query_to_subject_list_dict = {}
 
-# check get_read_common_part function
-def get_read_common_part(read_id):
+    for blast_hit in open(blastn_results):
+        blast_hit_split = blast_hit.strip().split('\t')
+        query = blast_hit_split[0]
+        subject = blast_hit_split[1]
+        subject_with_prefix = 'GenomicSeq__%s' % subject
+        iden = float(blast_hit_split[2])
+        align_len = int(blast_hit_split[3])
+        query_len = int(blast_hit_split[12])
+        coverage_q = float(align_len) * 100 / float(query_len)
+        if (iden >= iden_cutoff) and (coverage_q >= query_cov_cutoff):
+            if query not in query_to_subject_list_dict:
+                query_to_subject_list_dict[query] = [subject_with_prefix]
+            else:
+                query_to_subject_list_dict[query].append(subject_with_prefix)
 
-    read_id_common_part = '_'.join(read_id.split('_')[:-1])
-
-    return read_id_common_part
-
-
-sam_file = '/Users/songweizhi/Desktop/simulate_reads/combined_ref.sam'
-
-
-read_common_part_to_ref_dict = {}
-for each in open(sam_file):
-    if not each.startswith('@'):
-        each_split = each.strip().split('\t')
-        read_id = each_split[0]
-
-        # check read common part
-        read_id_common_part = get_read_common_part(read_id)
-        ref_name = each_split[2]
-        query_seq = each_split[9]
-
-        if read_id_common_part not in read_common_part_to_ref_dict:
-            read_common_part_to_ref_dict[read_id_common_part] = {ref_name}
-        else:
-            read_common_part_to_ref_dict[read_id_common_part].add(ref_name)
-
-
-multi_ref_matched_reads = set()
-for read_to_ref in read_common_part_to_ref_dict:
-    ref_set = read_common_part_to_ref_dict[read_to_ref]
-    if len(ref_set) > 1:
-        multi_ref_matched_reads.add(read_to_ref)
-
-
-print(multi_ref_matched_reads)
-
-
-
-for each in open(sam_file):
-    if not each.startswith('@'):
-        each_split = each.strip().split('\t')
-        read_id = each_split[0]
-        read_id_common_part = get_read_common_part(read_id)
-
-
-        if read_id_common_part in multi_ref_matched_reads:
-
-            print(each_split)
-
-
-
-
-
-
+    return query_to_subject_list_dict
 

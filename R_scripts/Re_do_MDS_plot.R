@@ -2,25 +2,20 @@ library(vegan) # for metaMDS
 library(ecodist) # for nmds,  https://www.rdocumentation.org/packages/ecodist/versions/2.0.1/topics/nmds
 
 # set working directory
-setwd("/Users/songweizhi/Dropbox/Research/Flow_cell/deepSNV_output_summary")
-strain = 'D2' # 210 or D2
-data_type = 'existence' # frequency or existence
+setwd("/Users/songweizhi/Desktop/deepSNV_output_summary")
+strain = '210' # 210 or D2
+data_type = 'frequency' # frequency or existence
 vegdist_method = 'euclidean' # euclidean or jaccard or bray, manhattan
 # Dissimilarity index, partial match to "manhattan", "euclidean", "canberra", "clark", "bray", "kulczynski", "jaccard", "gower", "altGower", "morisita", "horn", "mountford", "raup", "binomial", "chao", "cao" or "mahalanobis".
 
 # get input file name
-snv_summary_file = paste('deepSNV_output_summary_', strain, '_', data_type, '_cdc.txt', sep = '')
+snv_summary_file = paste('deepSNV_output_summary_', strain, '_', data_type, '.txt', sep = '')
 #snv_summary_file = paste('deepSNV_output_summary_', strain, '_', data_type, '.txt', sep = '')
 snv_factor_file = paste('deepSNV_output_summary_', strain, '_factor.txt', sep = '')
 
 # Import data
 snv_summary = read.delim(snv_summary_file, row.names=1)
-snv_summary
 snv_factor = read.delim(snv_factor_file, row.names=1)
-snv_factor
-
-# check samples and variables, # 638 variables (snv), 36 samples
-#dim(snv_summary)
 
 # transpose dataframe as vegan wants variables (SNVs) as columns
 snv_summary_t = t(snv_summary)

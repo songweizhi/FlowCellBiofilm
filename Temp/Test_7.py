@@ -212,20 +212,3 @@ for each_ref in refseq_id_list:
     # print(break_points_uniq_count_remove_low)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

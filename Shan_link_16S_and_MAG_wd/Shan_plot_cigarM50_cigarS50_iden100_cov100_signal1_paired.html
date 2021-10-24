@@ -1,0 +1,224 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="https://www.w3.org/1999/xhtml">
+<head>
+<title>SankeyIDf86d4a745a7c</title>
+<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+<style type="text/css">
+body {
+  color: #444444;
+  font-family: Arial,Helvetica,sans-serif;
+  font-size: 75%;
+  }
+  a {
+  color: #4D87C7;
+  text-decoration: none;
+}
+</style>
+</head>
+<body>
+ <!-- Sankey generated in R 3.6.2 by googleVis 0.6.5 package -->
+<!-- Tue Sep  8 19:03:30 2020 -->
+
+
+<!-- jsHeader -->
+<script type="text/javascript">
+ 
+// jsData 
+function gvisDataSankeyIDf86d4a745a7c () {
+var data = new google.visualization.DataTable();
+var datajson =
+[
+ [
+"MarkerGene__53",
+"GenomicSeq__scaffold_1185",
+1
+],
+[
+"MarkerGene__53",
+"GenomicSeq__scaffold_751",
+7
+],
+[
+"MarkerGene__17",
+"GenomicSeq__scaffold_20229",
+4
+],
+[
+"MarkerGene__3",
+"GenomicSeq__scaffold_1283",
+5
+],
+[
+"MarkerGene__17",
+"GenomicSeq__scaffold_18825",
+1
+],
+[
+"MarkerGene__57",
+"GenomicSeq__scaffold_18107",
+3
+],
+[
+"MarkerGene__34",
+"GenomicSeq__scaffold_3226",
+3
+],
+[
+"MarkerGene__66",
+"GenomicSeq__scaffold_1539",
+1
+],
+[
+"MarkerGene__59",
+"GenomicSeq__scaffold_14",
+35
+],
+[
+"MarkerGene__53",
+"GenomicSeq__scaffold_2164",
+2
+],
+[
+"MarkerGene__34",
+"GenomicSeq__scaffold_2164",
+1
+],
+[
+"MarkerGene__66",
+"GenomicSeq__scaffold_850",
+5
+],
+[
+"MarkerGene__34",
+"GenomicSeq__scaffold_2057",
+1
+],
+[
+"MarkerGene__17",
+"GenomicSeq__scaffold_18107",
+1
+],
+[
+"MarkerGene__53",
+"GenomicSeq__scaffold_367",
+5
+],
+[
+"MarkerGene__4",
+"GenomicSeq__scaffold_1927",
+2
+],
+[
+"MarkerGene__66",
+"GenomicSeq__scaffold_102",
+1
+],
+[
+"MarkerGene__57",
+"GenomicSeq__scaffold_18825",
+3
+],
+[
+"MarkerGene__57",
+"GenomicSeq__scaffold_13858",
+1
+],
+[
+"MarkerGene__34",
+"GenomicSeq__scaffold_10331",
+1
+],
+[
+"MarkerGene__66",
+"GenomicSeq__scaffold_452",
+3
+],
+[
+"MarkerGene__17",
+"GenomicSeq__scaffold_33244",
+1
+] 
+];
+data.addColumn('string','GenomicSeq');
+data.addColumn('string','MarkerGene');
+data.addColumn('number','Num');
+data.addRows(datajson);
+return(data);
+}
+ 
+// jsDrawChart
+function drawChartSankeyIDf86d4a745a7c() {
+var data = gvisDataSankeyIDf86d4a745a7c();
+var options = {};
+options["width"] = 500;
+options["height"] = 600;
+options["sankey"] = {node:{colorMode:'unique', labelPadding: 20, nodePadding: 8},link:{colorMode:'source'}};
+
+
+    var chart = new google.visualization.Sankey(
+    document.getElementById('SankeyIDf86d4a745a7c')
+    );
+    chart.draw(data,options);
+    
+
+}
+  
+ 
+// jsDisplayChart
+(function() {
+var pkgs = window.__gvisPackages = window.__gvisPackages || [];
+var callbacks = window.__gvisCallbacks = window.__gvisCallbacks || [];
+var chartid = "sankey";
+  
+// Manually see if chartid is in pkgs (not all browsers support Array.indexOf)
+var i, newPackage = true;
+for (i = 0; newPackage && i < pkgs.length; i++) {
+if (pkgs[i] === chartid)
+newPackage = false;
+}
+if (newPackage)
+  pkgs.push(chartid);
+  
+// Add the drawChart function to the global list of callbacks
+callbacks.push(drawChartSankeyIDf86d4a745a7c);
+})();
+function displayChartSankeyIDf86d4a745a7c() {
+  var pkgs = window.__gvisPackages = window.__gvisPackages || [];
+  var callbacks = window.__gvisCallbacks = window.__gvisCallbacks || [];
+  window.clearTimeout(window.__gvisLoad);
+  // The timeout is set to 100 because otherwise the container div we are
+  // targeting might not be part of the document yet
+  window.__gvisLoad = setTimeout(function() {
+  var pkgCount = pkgs.length;
+  google.load("visualization", "1", { packages:pkgs, callback: function() {
+  if (pkgCount != pkgs.length) {
+  // Race condition where another setTimeout call snuck in after us; if
+  // that call added a package, we must not shift its callback
+  return;
+}
+while (callbacks.length > 0)
+callbacks.shift()();
+} });
+}, 100);
+}
+ 
+// jsFooter
+</script>
+ 
+<!-- jsChart -->  
+<script type="text/javascript" src="https://www.google.com/jsapi?callback=displayChartSankeyIDf86d4a745a7c"></script>
+ 
+<!-- divChart -->
+  
+<div id="SankeyIDf86d4a745a7c" 
+  style="width: 500; height: 600;">
+</div>
+ <div><span>Data: my_data &#8226; Chart ID: <a href="Chart_SankeyIDf86d4a745a7c.html">SankeyIDf86d4a745a7c</a> &#8226; <a href="https://github.com/mages/googleVis">googleVis-0.6.5</a></span><br /> 
+<!-- htmlFooter -->
+<span> 
+  R version 3.6.2 (2019-12-12) 
+  &#8226; <a href="https://developers.google.com/terms/">Google Terms of Use</a> &#8226; <a href="https://developers.google.com/chart/interactive/docs/gallery/sankey">Documentation and Data Policy</a>
+</span></div>
+</body>
+</html>

@@ -1,34 +1,44 @@
-
-total = 0
-for each in open('/Users/songweizhi/Desktop/4_1_deepSNV_subsampled.txt'):
-    if not each.startswith('chr'):
-        each_split = each.strip().split(',')
-        p_value = float(each_split[4])
-
-        total += 1
-print(total)
+import numpy as np
 
 
-total_st_005 = 0
-total_lt_005 = 0
+def get_msc(mutant_freq_start, mutant_freq_end, generation_num):
+    malthusian_selection_coefficients = np.log((mutant_freq_end / mutant_freq_start) / ((1 - mutant_freq_end) / (1 - mutant_freq_start))) / generation_num
+    malthusian_selection_coefficients = float("{0:.2f}".format(malthusian_selection_coefficients))
+    return malthusian_selection_coefficients
 
-for each2 in open('/Users/songweizhi/Desktop/4_1_deepSNV_subsampled_sig0.9999999.txt'):
-    if not each2.startswith('chr'):
-        each_split2 = each2.strip().split(',')
-        p_value2 = float(each_split2[4])
 
-        if p_value2 > 0.05:
-            total_lt_005 += 1
+def get_msc_list(freq_list, iRep_list):
+
+    if freq_list[0] == 0:
+        freq_list_msc_1 = '-'
+    else:
+        freq_list_msc_1 = get_msc((1 / 662), freq_list[0], (iRep_list[0] + iRep_list[1]) / 2)
+
+    if freq_list[1] == 0:
+        freq_list_msc_2 = '-'
+    else:
+        if freq_list[0] == 0:
+            freq_list_msc_2 = get_msc((1 / 662), freq_list[1], (iRep_list[1] + iRep_list[2]) / 2)
         else:
-            total_st_005 += 1
+            freq_list_msc_2 = get_msc(freq_list[0], freq_list[1], (iRep_list[1] + iRep_list[2]) / 2)
 
-print(total_st_005)
-print(total_lt_005)
+    if freq_list[2] == 0:
+        freq_list_msc_3 = '-'
+    else:
+        if freq_list[1] == 0:
+            freq_list_msc_3 = get_msc((1 / 662), freq_list[2], (iRep_list[2] + iRep_list[3]) / 2)
+        else:
+            freq_list_msc_3 = get_msc(freq_list[1], freq_list[2], (iRep_list[2] + iRep_list[3]) / 2)
 
+    if freq_list[3] == 0:
+        freq_list_msc_4 = '-'
+    else:
+        if freq_list[2] == 0:
+            freq_list_msc_4 = get_msc((1 / 662), freq_list[3], ((iRep_list[3] + iRep_list[4]) / 2)*(15/9))
+        else:
+            freq_list_msc_4 = get_msc(freq_list[2], freq_list[3], ((iRep_list[3] + iRep_list[4]) / 2)*(15/9))
 
+    msc_list = [freq_list_msc_1, freq_list_msc_2, freq_list_msc_3, freq_list_msc_4]
 
-
-
-
-
+    return msc_list
 
