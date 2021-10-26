@@ -4,6 +4,8 @@ library(ecodist) # for nmds,  https://www.rdocumentation.org/packages/ecodist/ve
 # set working directory
 #setwd("/Users/songweizhi/Desktop/222/OneStep_Stats")
 setwd("/Users/songweizhi/FC_Biofilm/OneStep_Stats")
+setwd("/Users/songweizhi/Desktop/Biofilm2021/OneStep_MinBoth_10_MinEach_1_StrandBias_10_DepthDiff_30")
+setwd("/Users/songweizhi/Desktop/000")
 
 vegdist_method = 'euclidean' # euclidean or jaccard or bray, manhattan
 # Dissimilarity index, partial match to "manhattan", "euclidean", "canberra", "clark", "bray", "kulczynski", "jaccard", "gower", "altGower", "morisita", "horn", "mountford", "raup", "binomial", "chao", "cao" or "mahalanobis".
@@ -14,6 +16,8 @@ strain = '210' # 210 or D2
 snv_summary_file = paste('SNV_QC_ncd_even_flk_depth_', strain, '_matrix_no_plasmid.txt', sep = '')
 #snv_summary_file = paste('SNV_QC_ncd_even_flk_depth_', strain, '_matrix.txt', sep = '')
 snv_summary_file = paste('SNV_QC_ncd_even_flk_depth_', strain, '_matrix_gene_level_no_plasmid.txt', sep = '')
+snv_summary_file = paste('SNV_QC_ncd_even_flk_depth_', strain, '_matrix_gene_level.txt', sep = '')
+snv_summary_file = paste('SNV_QC_ncd_even_flk_depth_', strain, '_matrix_no_plasmid.txt', sep = '')
 
 snv_factor_file = paste('Stats_', strain, '_factor.txt', sep = '')
 
@@ -79,8 +83,8 @@ if (strain == '210'){
   legend_shape_list = legend_shape_list_D2
 }
 
-# add legend
-legend("topleft", inset=c(1,0), xpd=TRUE, bty="n", legend = levels(snv_factor$Label),pch=legend_shape_list, col=as.numeric(as.factor(levels(snv_factor$Label))))
+# add legend#
+#legend("topleft", inset=c(1,0), xpd=TRUE, bty="n", legend = levels(snv_factor$Label),pch=legend_shape_list, col=as.numeric(as.factor(levels(snv_factor$Label))))
 
 invisible(dev.off())
 

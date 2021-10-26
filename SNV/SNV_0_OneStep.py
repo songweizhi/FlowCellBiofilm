@@ -6,7 +6,6 @@ from datetime import datetime
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import generic_dna
 from scipy import stats
 import matplotlib as mpl
 mpl.use('Agg')
@@ -890,45 +889,46 @@ print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' The number of qualified
 
 
 ############################# separate depth plots according to provided difference cutoff #############################
-separate_plot = 1
-# separate plot files
-if separate_plot == 1:
 
-    # prepare folder
-    if os.path.isdir(pwd_plot_folder_sep):
-        shutil.rmtree(pwd_plot_folder_sep)
-        if os.path.isdir(pwd_plot_folder_sep):
-            shutil.rmtree(pwd_plot_folder_sep)
-        os.mkdir(pwd_plot_folder_sep)
-    else:
-        os.mkdir(pwd_plot_folder_sep)
-
-    for folder in [pwd_plot_folder_endings, pwd_plot_folder_even, pwd_plot_folder_diff, pwd_plot_folder_unqualified]:
-        os.mkdir(folder)
-
-    # get plots for SNV located at ending regions
-    for each_even in SNV_at_endings:
-        pwd_plot = '%s/%s*' % (pwd_plot_folder, each_even)
-        cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_endings)
-        os.system(cmd)
-
-    # get plots with similar flanking depth
-    for each_even in plot_prefix_even:
-        pwd_plot = '%s/%s*' % (pwd_plot_folder, each_even)
-        cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_even)
-        os.system(cmd)
-
-    # get plots with similar flanking depth
-    for each_diff in plot_prefix_diff:
-        pwd_plot = '%s/%s*' % (pwd_plot_folder, each_diff)
-        cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_diff)
-        os.system(cmd)
-
-    # get plots for unqualified SNVs
-    for each_unqualified in plot_prefix_unqualified:
-        pwd_plot = '%s/%s*' % (pwd_plot_folder, each_unqualified)
-        cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_unqualified)
-        os.system(cmd)
+# separate_plot = 1
+# # separate plot files
+# if separate_plot == 1:
+#
+#     # prepare folder
+#     if os.path.isdir(pwd_plot_folder_sep):
+#         shutil.rmtree(pwd_plot_folder_sep)
+#         if os.path.isdir(pwd_plot_folder_sep):
+#             shutil.rmtree(pwd_plot_folder_sep)
+#         os.mkdir(pwd_plot_folder_sep)
+#     else:
+#         os.mkdir(pwd_plot_folder_sep)
+#
+#     for folder in [pwd_plot_folder_endings, pwd_plot_folder_even, pwd_plot_folder_diff, pwd_plot_folder_unqualified]:
+#         os.mkdir(folder)
+#
+#     # get plots for SNV located at ending regions
+#     for each_even in SNV_at_endings:
+#         pwd_plot = '%s/%s*' % (pwd_plot_folder, each_even)
+#         cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_endings)
+#         os.system(cmd)
+#
+#     # get plots with similar flanking depth
+#     for each_even in plot_prefix_even:
+#         pwd_plot = '%s/%s*' % (pwd_plot_folder, each_even)
+#         cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_even)
+#         os.system(cmd)
+#
+#     # get plots with similar flanking depth
+#     for each_diff in plot_prefix_diff:
+#         pwd_plot = '%s/%s*' % (pwd_plot_folder, each_diff)
+#         cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_diff)
+#         os.system(cmd)
+#
+#     # get plots for unqualified SNVs
+#     for each_unqualified in plot_prefix_unqualified:
+#         pwd_plot = '%s/%s*' % (pwd_plot_folder, each_unqualified)
+#         cmd = 'cp %s %s/' % (pwd_plot, pwd_plot_folder_unqualified)
+#         os.system(cmd)
 
 
 ####################################### compare between Monoculture and Coculture ######################################
@@ -1156,8 +1156,8 @@ for SNV_matrix_cdc in SNV_matrix_cdc_list:
                                 rf_seq_mutated += current_bp
 
                             if ORF_strand_dict[each_gene] == '-':
-                                rf_seq_raw = str(Seq(rf_seq_raw, generic_dna).reverse_complement())
-                                rf_seq_mutated = str(Seq(rf_seq_mutated, generic_dna).reverse_complement())
+                                rf_seq_raw = str(Seq(rf_seq_raw).reverse_complement())
+                                rf_seq_mutated = str(Seq(rf_seq_mutated).reverse_complement())
 
                             rf_seq_raw_aa = str(SeqRecord(Seq(rf_seq_raw)).seq.translate(table=transl_table))
                             rf_seq_mutated_aa = str(SeqRecord(Seq(rf_seq_mutated)).seq.translate(table=transl_table))
@@ -1381,3 +1381,5 @@ if plot_snv_freq is True:
 print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]') + ' Done!')
 
 print('\n################################################################################################')
+
+

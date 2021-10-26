@@ -3,15 +3,19 @@ library(ecodist) # for nmds,  https://www.rdocumentation.org/packages/ecodist/ve
 
 # set working directory
 setwd("/Users/songweizhi/Desktop/deepSNV_output_summary")
+setwd("/Users/songweizhi/Desktop/000")
 strain = '210' # 210 or D2
 data_type = 'frequency' # frequency or existence
 vegdist_method = 'euclidean' # euclidean or jaccard or bray, manhattan
 # Dissimilarity index, partial match to "manhattan", "euclidean", "canberra", "clark", "bray", "kulczynski", "jaccard", "gower", "altGower", "morisita", "horn", "mountford", "raup", "binomial", "chao", "cao" or "mahalanobis".
 
 # get input file name
-snv_summary_file = paste('deepSNV_output_summary_', strain, '_', data_type, '.txt', sep = '')
 #snv_summary_file = paste('deepSNV_output_summary_', strain, '_', data_type, '.txt', sep = '')
-snv_factor_file = paste('deepSNV_output_summary_', strain, '_factor.txt', sep = '')
+#snv_summary_file = paste('deepSNV_output_summary_', strain, '_', data_type, '.txt', sep = '')
+#snv_factor_file = paste('deepSNV_output_summary_', strain, '_factor.txt', sep = '')
+
+snv_summary_file = 'SNV_QC_ncd_even_flk_depth_210_matrix_no_plasmid.txt'
+snv_factor_file = 'Stats_210_factor.txt'
 
 # Import data
 snv_summary = read.delim(snv_summary_file, row.names=1)
@@ -25,7 +29,7 @@ snv_summary_t = t(snv_summary)
 
 ## Calculate dissimilarity matrix, type ?vegdist for other options (e.g. Jaccard is useful for presence/absence analyses (composition only)).
 snv_summary_t_ja = vegdist(snv_summary_t, method = vegdist_method)
-?vegdist
+
 # plot hclust
 # snv_summary_t_ja_hclus = hclust(snv_summary_t_ja, method = "average") # Cluster the distances
 # par(pty = 's') # square plot
@@ -39,7 +43,7 @@ snv_summary_t_ja_mds = metaMDS(comm = snv_summary_t_ja)
 #snv_summary_t_ja_mds = nmds(snv_summary_t_ja)
 
 # plot stress
-# stressplot(snv_summary_t_ja_mds)
+#stressplot(snv_summary_t_ja_mds)
 
 ####################################### Get MDS plot #######################################
 
@@ -73,8 +77,9 @@ if (strain == '210'){
 
 # add legend
 legend("topleft", inset=c(1,0), xpd=TRUE, bty="n", legend = levels(snv_factor$Label),pch=legend_shape_list, col=as.numeric(as.factor(levels(snv_factor$Label))))
+legend("topleft", inset=c(1,0), xpd=TRUE, bty="n", legend = levels(snv_factor$Label),pch=legend_shape_list, col=as.numeric(as.factor(levels(snv_factor$Label))))
 
-
+invisible(dev.off())
 ############################## Perform PERMANOVA analysis ##############################
 
 # PERMANOVA analysis (http://cc.oulu.fi/~jarioksa/softhelp/vegan/html/adonis.html)
