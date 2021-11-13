@@ -1,5 +1,10 @@
 library(vegan) # for metaMDS
 library(ecodist) # for nmds,  https://www.rdocumentation.org/packages/ecodist/versions/2.0.1/topics/nmds
+# install.packages("devtools")
+library("devtools")
+#install_github("JosephCrispell/addTextLabels")
+library(addTextLabels)
+
 
 # set working directory
 setwd("/Users/songweizhi/Desktop/000")
@@ -9,18 +14,27 @@ vegdist_method = 'euclidean' # euclidean or jaccard or bray, manhattan
 # Jaccard is useful for presence/absence analyses (composition only)
 
 # get input file name
-strain = '210' # 210 or D2
+strain           = '210' # 210 or D2
 snv_summary_file = paste('SNV_QC_ncd_even_flk_depth_', strain, '_matrix_no_plasmid2.txt', sep = '')
-snv_factor_file = paste('Stats_', strain, '_factor.txt', sep = '')
+snv_factor_file  = paste('Stats_', strain, '_factor.txt', sep = '')
 
 
 ##############################################
 
 work_dir          = '/Users/songweizhi/Desktop/Biofilm2021/OneStep_MinBoth_10_MinEach_1_StrandBias_10_DepthDiff_30'
-snv_summary_file  = 'SNV_QC_ncd_even_flk_depth_210_matrix.txt'
-snv_factor_file   = 'Stats_210_factor.txt'
-strain            = '210' # 210 or D2
 vegdist_method    = 'euclidean'
+
+
+snv_summary_file  = 'SNV_QC_ncd_even_flk_depth_210_matrix.txt'
+#snv_summary_file  = 'SNV_QC_ncd_even_flk_depth_210_matrix_no_plasmid.txt'
+snv_factor_file   = 'Stats_210_factor.txt'
+strain            = '210'
+
+
+snv_summary_file  = 'SNV_QC_ncd_even_flk_depth_D2_matrix_no_plasmid.txt'
+snv_summary_file  = 'SNV_QC_ncd_even_flk_depth_D2_matrix_no_plasmid_rmed_three.txt'
+snv_factor_file   = 'Stats_D2_factor.txt'
+strain            = 'D2'
 
 
 ##############################################
@@ -46,13 +60,15 @@ snv_summary_t_ja_mds = metaMDS(comm = snv_summary_t_ja)
 plot_label_list = c()
 plot_color_list = c()
 plot_shape_list = c()
+plot_time_list = c()
 plot_label_list_uniq = c()
 plot_color_list_uniq = c()
 plot_shape_list_uniq = c()
 for (each_point in row.names(snv_summary_t_ja_mds$points)){
-  sample_code = substring(each_point, 1, 2)
   sample_code = strsplit(each_point, 'D')[[1]][1]
-  
+  sample_day = strsplit(each_point, 'D')[[1]][2]
+  sample_timepoint = paste('D', sample_day, sep = '')
+
   if (sample_code == 'X4'){
     current_label = 'Coculture_A'
     current_color = 'darkorange'
@@ -94,6 +110,7 @@ for (each_point in row.names(snv_summary_t_ja_mds$points)){
   plot_label_list = c(plot_label_list, current_label)
   plot_color_list = c(plot_color_list, current_color)
   plot_shape_list = c(plot_shape_list, current_shape)
+  plot_time_list = c(plot_time_list, sample_timepoint)
   
   if (current_label %in% plot_label_list_uniq == FALSE){
     plot_label_list_uniq = c(plot_label_list_uniq, current_label)
@@ -104,9 +121,14 @@ for (each_point in row.names(snv_summary_t_ja_mds$points)){
 
 
 # plot
-pdf(plot_out, width=5, height=5, pointsize=5)
+pdf(plot_out, width=5, height=5, pointsize=8)
 par(mar=c(5,4,2,7))
 plot(snv_summary_t_ja_mds$points, col=plot_color_list, pch=plot_shape_list)
-text(snv_summary_t_ja_mds$points, labels=snv_factor$Time, cex= 0.7, pos=3)
+#text(snv_summary_t_ja_mds$points, labels=plot_time_list, cex= 0.7, pos=3, offset=0.5, xpd=TRUE)
+addTextLabels(snv_summary_t_ja_mds$points[, c('MDS1')], snv_summary_t_ja_mds$points[, c('MDS2')], labels = plot_time_list, 
+              cex = 0.6, col.label = 'black', col.line = "black", lty = 0, lwd = 0.3)
+
 legend("topleft", inset=c(1,0), xpd=TRUE, bty="n", legend = plot_label_list_uniq, pch=plot_shape_list_uniq, col=plot_color_list_uniq)
 invisible(dev.off())
+
+#rm(list = ls())
